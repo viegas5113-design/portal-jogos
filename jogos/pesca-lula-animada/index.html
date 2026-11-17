@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesca da Lula · Personagens Animadas 🎬</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #4A90E2 40%, #1B4F72 70%, #0A2A3F 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            transition: background 0.5s;
+        }
+
+        body.tinta {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%) !important;
+        }
+
+        /* Nuvens animadas */
+        .nuvens {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .nuvem {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: moverNuvem linear infinite;
+        }
+
+        @keyframes moverNuvem {
+            0% { transform: translateX(-200px); }
+            100% { transform: translateX(calc(100vw + 200px)); }
+        }
+
+        /* Ondas do mar */
+        .ondas {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .onda {
+            position: absolute;
+            bottom: 0;
+            left: -50%;
+            width: 200%;
+            height: 100px;
+            background: rgba(0, 150, 200, 0.3);
+            border-radius: 40%;
+            animation: ondaMovimento 6s ease-in-out infinite;
+        }
+
+        .onda:nth-child(2) {
+            animation-delay: -2s;
+            background: rgba(0, 180, 220, 0.25);
+            height: 80px;
+        }
+
+        @keyframes ondaMovimento {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+        }
+
+        .container {
+            max-width: 900px;
+            width: 95%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px);
+            border-radius: 40px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 3px solid rgba(255,255,255,0.4);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            text-align: center;
+            color: #FFD700;
+            font-size: 3.5rem;
+            text-shadow: 0 0 20px #FFA500, 3px 3px 0 #8B4513;
+            animation: tituloPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes tituloPulse {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 20px #FFA500; }
+            50% { transform: scale(1.05); text-shadow: 0 0 40px #FFD700, 0 0 60px #FF8C00; }
+        }
+
+        /* Pescador SVG */
+        .area-pescador {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+            height: 200px;
+        }
+
+        .pescador-container {
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .pescador-container.lancar {
+            animation: lancarZagaia 0.6s ease-out;
+        }
+
+        @keyframes lancarZagaia {
+            0% { transform: rotate(0deg); }
+            30% { transform: rotate(-20deg); }
+            60% { transform: rotate(15deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .pescador-container.puxar {
+            animation: puxarLula 0.8s ease-out;
+        }
+
+        @keyframes puxarLula {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(-30px) rotate(-10deg); }
+            70% { transform: translateY(-10px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        .pescador-container.tinta {
+            animation: levarTinta 0.5s ease-out;
+            filter: brightness(0.3);
+        }
+
+        @keyframes levarTinta {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.9); filter: brightness(0.1); }
+            100% { transform: scale(1); filter: brightness(0.3); }
+        }
+
+        /* Balde de lulas */
+        .balde-area {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .balde {
+            background: linear-gradient(180deg, #8B4513, #654321);
+            border: 4px solid #D2691E;
+            border-radius: 0 0 30px 30px;
+            padding: 20px 40px;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.4rem;
+            box-shadow: 0 8px 0 #4A2800;
+            position: relative;
+        }
+
+        .balde span {
+            background: #FFD700;
+            color: #000;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 1.8rem;
+            margin-left: 10px;
+        }
+
+        /* Grelha de pesqueiros */
+        .pesqueiros {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .pesqueiro-card {
+            background: rgba(0,0,0,0.3);
+            border: 3px solid rgba(255,255,255,0.5);
+            border-radius: 25px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pesqueiro-card:hover {
+            transform: translateY(-8px);
+            border-color: #FFD700;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .pesqueiro-card h3 {
+            color: white;
+            font-size: 1.3rem;
+            text-shadow: 2px 2px 4px black;
+            margin-bottom: 10px;
+        }
+
+        .pesqueiro-card .icone {
+            font-size: 3rem;
+            animation: flutuarIcone 2s ease-in-out infinite;
+        }
+
+        @keyframes flutuarIcone {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .btn-pescar {
+            background: linear-gradient(180deg, #FF6347, #DC143C);
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-pescar:hover {
+            background: linear-gradient(180deg, #FF4500, #B22222);
+            transform: scale(1.05);
+        }
+
+        .btn-pescar:active {
+            transform: scale(0.95);
+        }
+
+        /* Lula animada no mar */
+        .lula-mar {
+            position: fixed;
+            pointer-events: none;
+            z-index: 5;
+            animation: nadarLula 8s linear infinite;
+            font-size: 40px;
+            opacity: 0.5;
+        }
+
+        @keyframes nadarLula {
+            0% { transform: translateX(-100px) translateY(0); }
+            25% { transform: translateX(25vw) translateY(-30px); }
+            50% { transform: translateX(50vw) translateY(0); }
+            75% { transform: translateX(75vw) translateY(-20px); }
+            100% { transform: translateX(100vw) translateY(0); }
+        }
+
+        /* Lula apanhada */
+        .lula-apanhada {
+            position: fixed;
+            font-size: 60px;
+            pointer-events: none;
+            z-index: 100;
+            animation: lulaPuxada 1s ease-out forwards;
+        }
+
+        @keyframes lulaPuxada {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-300px) scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        /* Tinta splash */
+        .tinta-splash {
+            position: fixed;
+            pointer-events: none;
+            z-index: 99;
+            animation: tintaExplodir 0.6s ease-out forwards;
+        }
+
+        @keyframes tintaExplodir {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: scale(3) rotate(180deg); opacity: 0; }
+        }
+
+        #mensagem {
+            text-align: center;
+            font-size: 1.5rem;
+            color: white;
+            min-height: 60px;
+            text-shadow: 2px 2px 4px black;
+            font-weight: bold;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bolhas */
+        .bolha {
+            position: fixed;
+            pointer-events: none;
+            z-index: 50;
+            font-size: 20px;
+            animation: subirBolha 1s ease-out forwards;
+        }
+
+        @keyframes subirBolha {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-150px) scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nuvens -->
+    <div class="nuvens">
+        <div class="nuvem" style="top:20px; width:120px; height:60px; animation-duration:25s;"></div>
+        <div class="nuvem" style="top:50px; width:150px; height:70px; animation-duration:30s; animation-delay:-8s;"></div>
+        <div class="nuvem" style="top:10px; width:100px; height:50px; animation-duration:20s; animation-delay:-15s;"></div>
+    </div>
+
+    <!-- Ondas -->
+    <div class="ondas">
+        <div class="onda"></div>
+        <div class="onda"></div>
+    </div>
+
+    <!-- Lulas a nadar no fundo -->
+    <div class="lula-mar" style="top:60%; animation-delay:0s;">🦑</div>
+    <div class="lula-mar" style="top:70%; animation-delay:-4s; font-size:30px;">🐙</div>
+    <div class="lula-mar" style="top:55%; animation-delay:-7s; font-size:35px;">🦑</div>
+
+    <div class="container">
+        <h1>🎣 Pesca da Lula</h1>
+        <p style="text-align:center;color:white;font-size:1.2rem;text-shadow:1px 1px 3px black;">🌊 Lagos · Algarve</p>
+
+        <!-- Pescador SVG animado -->
+        <div class="area-pescador">
+            <div class="pescador-container" id="pescadorContainer">
+                <svg width="180" height="200" viewBox="0 0 180 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Corpo -->
+                    <rect x="60" y="80" width="40" height="60" fill="#4169E1" rx="5"/>
+                    <!-- Cabeça -->
+                    <circle cx="80" cy="50" r="25" fill="#FFDAB9"/>
+                    <!-- Chapéu -->
+                    <ellipse cx="80" cy="30" rx="35" ry="8" fill="#8B4513"/>
+                    <rect x="65" y="10" width="30" height="20" fill="#8B4513" rx="5"/>
+                    <!-- Olhos -->
+                    <circle cx="70" cy="48" r="4" fill="black"/>
+                    <circle cx="90" cy="48" r="4" fill="black"/>
+                    <!-- Sorriso -->
+                    <path d="M70 58 Q80 68 90 58" stroke="black" fill="transparent" stroke-width="2"/>
+                    <!-- Braço esquerdo -->
+                    <line x1="60" y1="90" x2="30" y2="120" stroke="#FFDAB9" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Braço direito (segura cana) -->
+                    <line x1="100" y1="90" x2="140" y2="60" stroke="#FFDAB9" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Cana de pesca -->
+                    <line x1="140" y1="60" x2="170" y2="10" stroke="#8B4513" stroke-width="4" stroke-linecap="round"/>
+                    <!-- Linha -->
+                    <path d="M170 10 Q175 50 170 90 Q165 110 170 130" stroke="#C0C0C0" fill="transparent" stroke-width="2"/>
+                    <!-- Anzol -->
+                    <path d="M170 130 L170 145 Q170 150 165 150 Q160 150 160 145" stroke="#C0C0C0" fill="transparent" stroke-width="2"/>
+                    <!-- Pernas -->
+                    <rect x="65" y="140" width="12" height="30" fill="#2F4F4F" rx="3"/>
+                    <rect x="83" y="140" width="12" height="30" fill="#2F4F4F" rx="3"/>
+                    <!-- Botas -->
+                    <rect x="62" y="165" width="18" height="8" fill="#8B4513" rx="3"/>
+                    <rect x="80" y="165" width="18" height="8" fill="#8B4513" rx="3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Balde -->
+        <div class="balde-area">
+            <div class="balde">
+                🪣 Lulas no balde: <span id="contador">0</span>
+            </div>
+        </div>
+
+        <!-- Mensagem -->
+        <div id="mensagem">🎯 Escolhe um pesqueiro e lança a zagaia!</div>
+
+        <!-- Pesqueiros -->
+        <div class="pesqueiros">
+            <div class="pesqueiro-card" onclick="pescar('Arranhadas')">
+                <div class="icone">🏝️</div>
+                <h3>Arranhadas</h3>
+                <button class="btn-pescar">🎯 Lançar</button>
+            </div>
+            <div class="pesqueiro-card" onclick="pescar('Ponta da Piedade')">
+                <div class="icone">⛰️</div>
+                <h3>P. Piedade</h3>
+                <button class="btn-pescar">🎯 Lançar</button>
+            </div>
+            <div class="pesqueiro-card" onclick="pescar('Praia da Luz')">
+                <div class="icone">🏖️</div>
+                <h3>Praia da Luz</h3>
+                <button class="btn-pescar">🎯 Lançar</button>
+            </div>
+            <div class="pesqueiro-card" onclick="pescar('Rodão')">
+                <div class="icone">🛶</div>
+                <h3>Rodão</h3>
+                <button class="btn-pescar">🎯 Lançar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lulasApanhadas = 0;
+        const contadorEl = document.getElementById('contador');
+        const mensagemEl = document.getElementById('mensagem');
+        const pescadorContainer = document.getElementById('pescadorContainer');
+        const body = document.body;
+
+        function criarBolhas(x, y, quantidade = 10) {
+            for (let i = 0; i < quantidade; i++) {
+                setTimeout(() => {
+                    const bolha = document.createElement('div');
+                    bolha.className = 'bolha';
+                    bolha.textContent = '🫧';
+                    bolha.style.left = (x + Math.random() * 60 - 30) + 'px';
+                    bolha.style.top = (y + Math.random() * 40 - 20) + 'px';
+                    bolha.style.fontSize = (Math.random() * 16 + 10) + 'px';
+                    document.body.appendChild(bolha);
+                    setTimeout(() => bolha.remove(), 1000);
+                }, i * 50);
+            }
+        }
+
+        function criarLulaApanhada(x, y) {
+            const lula = document.createElement('div');
+            lula.className = 'lula-apanhada';
+            lula.textContent = '🦑';
+            lula.style.left = x + 'px';
+            lula.style.top = y + 'px';
+            document.body.appendChild(lula);
+            setTimeout(() => lula.remove(), 1000);
+        }
+
+        function criarTinta(x, y) {
+            const tinta = document.createElement('div');
+            tinta.className = 'tinta-splash';
+            tinta.textContent = '💣';
+            tinta.style.left = x + 'px';
+            tinta.style.top = y + 'px';
+            tinta.style.fontSize = '50px';
+            document.body.appendChild(tinta);
+            
+            // Manchas de tinta
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const mancha = document.createElement('div');
+                    mancha.textContent = '⚫';
+                    mancha.style.position = 'fixed';
+                    mancha.style.left = (x + Math.random() * 100 - 50) + 'px';
+                    mancha.style.top = (y + Math.random() * 100 - 50) + 'px';
+                    mancha.style.fontSize = (Math.random() * 30 + 20) + 'px';
+                    mancha.style.pointerEvents = 'none';
+                    mancha.style.zIndex = '98';
+                    mancha.style.opacity = '0.8';
+                    mancha.style.animation = 'tintaExplodir 0.5s ease-out forwards';
+                    document.body.appendChild(mancha);
+                    setTimeout(() => mancha.remove(), 500);
+                }, i * 40);
+            }
+            
+            setTimeout(() => tinta.remove(), 600);
+        }
+
+        function pescar(nomePesqueiro) {
+            // Remove classes anteriores
+            pescadorContainer.classList.remove('lancar', 'puxar', 'tinta');
+            body.classList.remove('tinta');
+            void pescadorContainer.offsetWidth; // reflow
+
+            // Animação de lançar
+            pescadorContainer.classList.add('lancar');
+            
+            const pescadorRect = pescadorContainer.getBoundingClientRect();
+            const centroX = pescadorRect.left + pescadorRect.width / 2;
+            const centroY = pescadorRect.top + pescadorRect.height / 3;
+
+            criarBolhas(centroX + 80, centroY + 20, 8);
+
+            const acao = Math.floor(Math.random() * 3) + 1;
+
+            setTimeout(() => {
+                pescadorContainer.classList.remove('lancar');
+
+                if (acao === 1) {
+                    // Lula apanhada!
+                    mensagemEl.innerHTML = `🦑 <strong>ZÁS!</strong> Em ${nomePesqueiro}: Esticão forte! Lula gigante no anzol!`;
+                    mensagemEl.style.color = '#00FF88';
+                    
+                    pescadorContainer.classList.add('puxar');
+                    criarLulaApanhada(centroX + 60, centroY - 20);
+                    criarBolhas(centroX + 60, centroY - 20, 15);
+                    
+                    lulasApanhadas++;
+                    contadorEl.textContent = lulasApanhadas;
+                    
+                    // Efeito de confete
+                    for (let i = 0; i < 12; i++) {
+                        setTimeout(() => {
+                            const confete = document.createElement('div');
+                            confete.textContent = ['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];
+                            confete.style.position = 'fixed';
+                            confete.style.left = (centroX + Math.random() * 120 - 60) + 'px';
+                            confete.style.top = (centroY + Math.random() * 80 - 40) + 'px';
+                            confete.style.fontSize = '30px';
+                            confete.style.pointerEvents = 'none';
+                            confete.style.zIndex = '200';
+                            confete.style.animation = 'lulaPuxada 1.2s ease-out forwards';
+                            document.body.appendChild(confete);
+                            setTimeout(() => confete.remove(), 1200);
+                        }, i * 60);
+                    }
+
+                    setTimeout(() => pescadorContainer.classList.remove('puxar'), 800);
+
+                } else if (acao === 2) {
+                    // Tinta!
+                    mensagemEl.innerHTML = `🐙 <strong>PFFF!</strong> Em ${nomePesqueiro}: Tinta preta! Ficaste forrado!`;
+                    mensagemEl.style.color = '#FF4444';
+                    
+                    pescadorContainer.classList.add('tinta');
+                    body.classList.add('tinta');
+                    criarTinta(centroX + 40, centroY + 30);
+                    criarBolhas(centroX + 40, centroY + 30, 6);
+                    
+                    setTimeout(() => {
+                        pescadorContainer.classList.remove('tinta');
+                        body.classList.remove('tinta');
+                    }, 2000);
+
+                } else {
+                    // Água calma
+                    mensagemEl.innerHTML = `🌊 Em ${nomePesqueiro}: Água calma... Nenhuma lula por perto.`;
+                    mensagemEl.style.color = '#AADDFF';
+                    criarBolhas(centroX + 70, centroY + 40, 5);
+                }
+
+                // Mensagem extra a cada 5 lulas
+                if (lulasApanhadas > 0 && lulasApanhadas % 5 === 0) {
+                    setTimeout(() => {
+                        mensagemEl.innerHTML += ' 🎉 <strong>5 LULAS! És o rei da zagaia!</strong>';
+                    }, 500);
+                }
+
+            }, 600);
+        }
+
+        // Duplo clique no título para limpar
+        document.querySelector('h1').addEventListener('dblclick', () => {
+            body.classList.remove('tinta');
+            pescadorContainer.classList.remove('tinta');
+            mensagemEl.innerHTML = '🌀 Mar limpo! Pronto para pescar de novo.';
+            mensagemEl.style.color = 'white';
+        });
+
+        console.log('🎣 Jogo de Pesca da Luga pronto! Personagens animadas a postos!');
+    </script>
+</body>
+</html>

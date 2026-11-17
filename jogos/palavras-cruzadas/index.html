@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Palavras Cruzadas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .crossword {
+            width: 500px;
+            border: 2px solid #333;
+            padding: 20px;
+            background: #fff;
+        }
+        .crossword .row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .crossword .cell {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .input-field {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 18px;
+        }
+        .submit-btn {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #007BFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="crossword">
+        <div class="row">
+            <div class="cell" id="a1">A</div>
+            <div class="cell" id="a2">B</div>
+            <div class="cell" id="a3">C</div>
+            <div class="cell" id="a4">D</div>
+            <div class="cell" id="a5">E</div>
+        </div>
+        <div class="row">
+            <div class="cell" id="b1">F</div>
+            <div class="cell" id="b2">G</div>
+            <div class="cell" id="b3">H</div>
+            <div class="cell" id="b4">I</div>
+            <div class="cell" id="b5">J</div>
+        </div>
+        <div class="row">
+            <div class="cell" id="c1">K</div>
+            <div class="cell" id="c2">L</div>
+            <div class="cell" id="c3">M</div>
+            <div class="cell" id="c4">N</div>
+            <div class="cell" id="c5">O</div>
+        </div>
+        <div class="row">
+            <div class="cell" id="d1">P</div>
+            <div class="cell" id="d2">Q</div>
+            <div class="cell" id="d3">R</div>
+            <div class="cell" id="d4">S</div>
+            <div class="cell" id="d5">T</div>
+        </div>
+        <div class="row">
+            <div class="cell" id="e1">U</div>
+            <div class="cell" id="e2">V</div>
+            <div class="cell" id="e3">W</div>
+            <div class="cell" id="e4">X</div>
+            <div class="cell" id="e5">Y</div>
+        </div>
+        <div class="input-field">
+            <label for="input-word">Palavra:</label>
+            <input type="text" id="input-word" placeholder="Insira a palavra...">
+        </div>
+        <button class="submit-btn" onclick="checkWord()">Verificar</button>
+        <div class="result"></div>
+    </div>
+
+    <script>
+        function checkWord() {
+            const inputWord = document.getElementById('input-word').value.toUpperCase();
+            const resultElement = document.querySelector('.result');
+            const word = document.querySelector('.cell').innerText;
+
+            if (inputWord === word) {
+                resultElement.textContent = 'Parabéns! A resposta está correta.';
+            } else {
+                resultElement.textContent = `Desculpe, a resposta correta é "${word}". Tente novamente.`;
+            }
+        }
+    </script>
+</body>
+</html>

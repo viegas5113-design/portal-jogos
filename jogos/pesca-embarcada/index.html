@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pesca Embarcada Pro - Oceano Português</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        
+        /* Custom Neon Glows */
+        .glow-blue { text-shadow: 0 0 12px rgba(14, 165, 233, 0.8); }
+        .glow-green { text-shadow: 0 0 12px rgba(34, 197, 94, 0.8); }
+        .glow-amber { text-shadow: 0 0 12px rgba(245, 158, 11, 0.8); }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            height: clamp(360px, 65vh, 640px);
+            margin: auto;
+            touch-action: none;
+        }
+
+        /* Animated Tension Bar pulse */
+        .tension-danger {
+            animation: pulse-red 0.3s infinite alternate;
+        }
+        @keyframes pulse-red {
+            from { box-shadow: 0 0 5px #ef4444; }
+            to { box-shadow: 0 0 20px #dc2626; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 bg-slate-950">
+
+    <div class="w-full max-w-6xl flex flex-col items-center">
+        
+        <!-- Header / Navigation Bar -->
+        <header class="w-full flex flex-wrap justify-between items-center mb-3 px-3 py-2 glass-panel rounded-2xl">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-gradient-to-tr from-cyan-600 to-blue-700 rounded-xl shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-ship text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black font-rajdhani tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-indigo-300">
+                        PESCA EMBARCADA PRO
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Costa Portuguesa • Simulador Marítimo</p>
+                </div>
+            </div>
+
+            <!-- Global Stats Header -->
+            <div class="flex items-center gap-3 sm:gap-6 my-2 sm:my-0">
+                <div class="text-center">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Nível</span>
+                    <span id="stat-level" class="text-lg font-black font-rajdhani text-cyan-400">1</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Capturas</span>
+                    <span id="stat-weight" class="text-lg font-black font-rajdhani text-amber-400">0.0 kg</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Pontos</span>
+                    <span id="stat-score" class="text-lg font-black font-rajdhani text-emerald-400">0</span>
+                </div>
+            </div>
+
+            <!-- Controls Buttons -->
+            <div class="flex items-center space-x-2">
+                <button id="btn-sound" class="p-2 sm:px-3 sm:py-2 rounded-xl glass-panel text-slate-300 hover:text-cyan-400 transition flex items-center gap-2">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                    <span class="hidden sm:inline text-xs font-bold">Som</span>
+                </button>
+                <button id="btn-guide" class="p-2 sm:px-3 sm:py-2 rounded-xl glass-panel text-slate-300 hover:text-amber-400 transition flex items-center gap-2">
+                    <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+                    <span class="hidden sm:inline text-xs font-bold">Peixes</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <div id="game-container" class="rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-black w-full relative">
+            
+            <!-- Main Game Canvas -->
+            <canvas id="gameCanvas" class="w-full h-full block cursor-pointer touch-none"></canvas>
+
+            <!-- Active HUD Overlay -->
+            <div id="hud-in-game" class="absolute top-0 left-0 w-full p-4 pointer-events-none flex justify-between items-start hidden">
+                
+                <!-- Target Box for Level -->
+                <div class="glass-panel p-3 rounded-xl flex flex-col gap-1 border-l-4 border-l-cyan-500">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Objetivo do Nível <span id="hud-level-num">1</span></span>
+                    <div class="text-sm font-bold text-slate-200">
+                        Meta: <span id="hud-level-target" class="text-cyan-400 font-extrabold">3.0 kg</span>
+                    </div>
+                    <!-- Progress bar -->
+                    <div class="w-36 h-2 bg-slate-800 rounded-full overflow-hidden mt-1">
+                        <div id="hud-target-progress" class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Mode Indicator Badge -->
+                <div id="hud-mode-badge" class="glass-panel px-4 py-2 rounded-xl flex items-center gap-3 border border-slate-700">
+                    <i id="hud-mode-icon" class="fa-solid fa-anchor text-cyan-400 text-lg"></i>
+                    <div>
+                        <div id="hud-mode-title" class="text-xs font-bold uppercase tracking-wider text-slate-200">Pesca de Fundo</div>
+                        <div id="hud-mode-sub" class="text-[10px] text-slate-400">Diurna • Anzol de Fundo</div>
+                    </div>
+                </div>
+
+                <!-- Fishing Action / Bite Alert Box -->
+                <div id="hud-bite-alert" class="glass-panel px-5 py-2.5 rounded-xl border border-amber-500/50 bg-amber-500/10 hidden animate-bounce flex items-center gap-3">
+                    <i class="fa-solid fa-bell text-amber-400 text-xl animate-spin"></i>
+                    <div>
+                        <span class="text-xs font-black text-amber-400 uppercase tracking-widest block">PEIXE AO ANZOL!</span>
+                        <span class="text-[10px] text-slate-300">Pressiona [ESPAÇO] ou Clica sem parar!</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Line Tension Bar (Visible during fight) -->
+            <div id="hud-tension-wrapper" class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-md glass-panel p-3 rounded-2xl border border-slate-700 hidden pointer-events-none">
+                <div class="flex justify-between items-center mb-1 text-xs font-extrabold uppercase tracking-wider">
+                    <span class="text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-water"></i> Tensão da Linha</span>
+                    <span id="tension-percentage" class="text-slate-200">0%</span>
+                </div>
+                <div id="tension-bar-container" class="w-full h-5 bg-slate-900 rounded-xl overflow-hidden p-0.5 border border-slate-800 relative">
+                    <div id="tension-bar-fill" class="h-full w-0 rounded-lg bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500 transition-all duration-75"></div>
+                    <!-- Target Sweet Zone indicator -->
+                    <div class="absolute top-0 bottom-0 left-[35%] right-[30%] border-x-2 border-white/40 bg-white/5 pointer-events-none"></div>
+                </div>
+                <p id="fight-status-text" class="text-[11px] font-bold text-center mt-1 text-emerald-400">Pressiona para enrolar!</p>
+            </div>
+
+            <!-- Start / Mode Selection Screen Overlay -->
+            <div id="screen-start" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-20">
+                <div class="w-16 h-16 mb-3 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                    <i class="fa-solid fa-compass-drafting text-3xl text-white"></i>
+                </div>
+                <h2 class="text-2xl sm:text-4xl font-black font-rajdhani mb-1 tracking-wide text-white">
+                    ESCOLHE A TUA EMBARCAÇÃO E TÉCNICA
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-300 max-w-lg mb-6 leading-relaxed">
+                    Prepara a cana de pesca nas águas profundas de Portugal. Seleciona a modalidade de pesca e o horário da maresia.
+                </p>
+
+                <!-- Selection Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mb-6">
+                    
+                    <!-- Mode 1: Pesca de Fundo -->
+                    <button id="card-mode-fundo" class="group relative p-4 rounded-2xl bg-slate-900/80 border-2 border-cyan-500/50 hover:border-cyan-400 hover:bg-slate-800/80 transition-all text-left flex flex-col justify-between cursor-pointer">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 text-lg group-hover:scale-110 transition"><i class="fa-solid fa-fish-fins"></i></span>
+                            <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 text-[10px] font-bold uppercase border border-cyan-800">Pesca de Fundo</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white mb-1">Peixes Nobres de Fundo</h3>
+                            <p class="text-xs text-slate-400 leading-normal mb-2">
+                                Captura espécies de rocha e substrato: <strong class="text-slate-200">Sargos, Dourada, Robalo, Besugo, Bica e Pargo</strong>.
+                            </p>
+                        </div>
+                        <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <i class="fa-solid fa-sun text-amber-400"></i> Diurna • Chumbada Pesada
+                        </span>
+                    </button>
+
+                    <!-- Mode 2: Pesca de Cefalópodes (Lulas, Chocos, Polvos) -->
+                    <button id="card-mode-cefalopodes" class="group relative p-4 rounded-2xl bg-slate-900/80 border-2 border-purple-500/50 hover:border-purple-400 hover:bg-slate-800/80 transition-all text-left flex flex-col justify-between cursor-pointer">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 text-lg group-hover:scale-110 transition"><i class="fa-solid fa-dharmachakra"></i></span>
+                            <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-300 text-[10px] font-bold uppercase border border-purple-800">Cefalópodes</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white mb-1">Lula, Choco e Polvo</h3>
+                            <p class="text-xs text-slate-400 leading-normal mb-2">
+                                Pesca com palangre e palhaço. Inclui <strong class="text-slate-200">Choco e Polvo (de dia)</strong> e <strong class="text-slate-200">Lula (de dia ou com luz noturna)</strong>.
+                            </p>
+                        </div>
+                        <!-- Sub options for Cephalopods -->
+                        <div class="flex gap-2 mt-2 pt-2 border-t border-slate-800" onclick="event.stopPropagation();">
+                            <label class="flex items-center gap-1 text-[10px] font-bold text-slate-300 cursor-pointer">
+                                <input type="radio" name="cefa-time" value="day" checked class="accent-purple-500"> Dia
+                            </label>
+                            <label class="flex items-center gap-1 text-[10px] font-bold text-emerald-400 cursor-pointer">
+                                <input type="radio" name="cefa-time" value="night" class="accent-emerald-500"> <i class="fa-solid fa-lightbulb"></i> Com Luz Noturna
+                            </label>
+                        </div>
+                    </button>
+
+                </div>
+
+                <button id="btn-start-game" class="px-8 py-3.5 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black font-rajdhani text-lg rounded-xl shadow-lg shadow-cyan-500/25 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3">
+                    <i class="fa-solid fa-anchor"></i> LANÇAR A LINHA AO MAR
+                </button>
+            </div>
+
+            <!-- Catch Result Modal -->
+            <div id="screen-catch" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-30 hidden">
+                <div id="catch-icon-bg" class="w-20 h-20 mb-3 rounded-full bg-emerald-500/20 border-2 border-emerald-400/50 flex items-center justify-center text-4xl text-emerald-400 shadow-xl">
+                    <i id="catch-icon" class="fa-solid fa-fish"></i>
+                </div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-1">EXCELENTE CAPTURA!</h3>
+                <h2 id="catch-title" class="text-3xl font-black font-rajdhani text-white mb-2">Dourada da Costa</h2>
+                
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs my-4 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Peso</span>
+                        <span id="catch-weight" class="text-xl font-extrabold text-amber-400">2.45 kg</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Valor</span>
+                        <span id="catch-points" class="text-xl font-extrabold text-cyan-400">+245 pts</span>
+                    </div>
+                </div>
+
+                <p id="catch-desc" class="text-xs text-slate-300 max-w-sm mb-6 italic">
+                    "Peixe lutador e com dentes fortes, capturado junto às formações rochosas."
+                </p>
+
+                <button id="btn-continue-fishing" class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold font-rajdhani rounded-xl shadow-lg shadow-emerald-500/20 transition transform hover:scale-105">
+                    VOLTAR A PESCAR
+                </button>
+            </div>
+
+            <!-- Level Up Modal -->
+            <div id="screen-levelup" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-40 hidden">
+                <div class="w-20 h-20 mb-3 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-4xl text-amber-400 shadow-xl animate-bounce">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">PARABÉNS CAPITÃO!</h3>
+                <h2 id="levelup-title" class="text-3xl font-black font-rajdhani text-white mb-2">SUBISTE PARA O NÍVEL 2!</h2>
+                <p class="text-xs text-slate-300 max-w-sm mb-6">
+                    Atingiste a meta de quilos para esta zona. Os peixes nos próximos mares serão maiores, mais rápidos e mais resistentes!
+                </p>
+                <button id="btn-next-level" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold font-rajdhani text-lg rounded-xl shadow-lg transition transform hover:scale-105">
+                    AVANÇAR PARA O PRÓXIMO NÍVEL
+                </button>
+            </div>
+
+            <!-- Fish Guide Modal -->
+            <div id="screen-guide" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-50 hidden">
+                <h3 class="text-2xl font-black font-rajdhani text-cyan-400 mb-4"><i class="fa-solid fa-book-open"></i> CATÁLOGO DE ESPÉCIES</h3>
+                
+                <div class="w-full max-w-2xl max-h-80 overflow-y-auto space-y-2 pr-2 text-left mb-6">
+                    <!-- Fish entries -->
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-fish text-amber-400 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Sargo & Besugo</h4>
+                                <p class="text-xs text-slate-400">Pesca de Fundo • Profundidade Média • Lutas rápidas e vibração constante.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-300">0.4 - 2.5 kg</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-fish-fins text-yellow-300 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Dourada & Robalo</h4>
+                                <p class="text-xs text-slate-400">Pesca de Fundo • Muito fortes • Fugas violentas para o fundo.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-300">1.2 - 7.0 kg</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-gem text-rose-400 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Bica & Pargo</h4>
+                                <p class="text-xs text-slate-400">Pesca de Fundo Profunda • Espécies raras e valiosas de grandes profundidades.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-300">1.5 - 10.0 kg</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-dharmachakra text-purple-400 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Choco & Polvo (Diurno)</h4>
+                                <p class="text-xs text-slate-400">Cefalópodes • Polvo agarra-se às pedras (alta resistência inicial); Choco puxa ritmado.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-300">0.5 - 5.0 kg</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-lightbulb text-emerald-400 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Lulas (Diurna e com Luz Noturna)</h4>
+                                <p class="text-xs text-slate-400">Cefalópodes • Impulsos de jato de água. À noite com foco verde a atração é máxima!</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-300">0.3 - 2.2 kg</span>
+                    </div>
+                </div>
+
+                <button id="btn-close-guide" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold font-rajdhani rounded-xl border border-slate-700">
+                    VOLTAR AO JOGO
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Footer / Controls Helper -->
+        <footer class="w-full mt-3 flex flex-wrap justify-between items-center text-xs text-slate-400 px-2 gap-2">
+            <div><i class="fa-solid fa-gamepad text-cyan-400 mr-1"></i> Controlo: Mantém <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-white font-bold">ESPAÇO</kbd> ou toque com o <kbd class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-white font-bold">DEDO NO ECRÃ</kbd> para enrolar.</div>
+            <div>Costa Portuguesa • Simulação de Mar</div>
+        </footer>
+
+    </div>
+
+    <!-- GAME ENGINE CODE -->
+    <script>
+        /* Web Audio Sound Synthesizer (No external MP3 files required) */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playReelClick() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800 + Math.random() * 200, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.04);
+            }
+
+            playSplash() {
+                if (this.muted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playBiteAlert() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(900, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playSnapLine() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCatchVictory() {
+                if (this.muted || !this.ctx) return;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.08);
+                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.3);
+                });
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const GAME_WIDTH = 1100;
+        const GAME_HEIGHT = 640;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Species Database
+        const SPECIES_DB = {
+            fundo: [
+                { name: 'Besugo', minW: 0.3, maxW: 1.0, color: '#f87171', strength: 1.2, depthRatio: 0.65, desc: 'Peixe gregário muito comum na costa portuguesa.' },
+                { name: 'Sargo', minW: 0.5, maxW: 2.2, color: '#94a3b8', strength: 1.8, depthRatio: 0.82, desc: 'Vive junto às rochas. Puxões secos e enérgicos.' },
+                { name: 'Robalo', minW: 1.0, maxW: 5.5, color: '#cbd5e1', strength: 2.5, depthRatio: 0.50, desc: 'Predador rápido com fugas vertiginosas.' },
+                { name: 'Dourada', minW: 1.2, maxW: 6.0, color: '#fbbf24', strength: 3.0, depthRatio: 0.85, desc: 'A rainha do fundo. Dentes fortes e luta intensa.' },
+                { name: 'Bica', minW: 0.8, maxW: 3.5, color: '#f43f5e', strength: 2.2, depthRatio: 0.75, desc: 'Espécie nobre de tom rosado apreciada na pesca embarcada.' },
+                { name: 'Pargo', minW: 2.0, maxW: 9.5, color: '#e11d48', strength: 4.2, depthRatio: 0.92, desc: 'O gigante das pedras profundas. Requer máxima perícia!' }
+            ],
+            cefalopodes: [
+                { name: 'Lula da Costa', minW: 0.3, maxW: 1.8, color: '#38bdf8', strength: 1.5, depthRatio: 0.45, desc: 'Avança com jatos de água rápidos. Atraída por luzes.' },
+                { name: 'Choco', minW: 0.4, maxW: 2.2, color: '#a855f7', strength: 1.7, depthRatio: 0.75, desc: 'Corpo oval, puxa ritmicamente para o fundo.' },
+                { name: 'Polvo', minW: 1.0, maxW: 5.2, color: '#d97706', strength: 3.5, depthRatio: 0.95, desc: 'Tenta agarrar-se ao fundo marinho. Pesa imenso no arranque.' }
+            ]
+        };
+
+        // Game State Variables
+        let gameState = 'START'; // START, WAITING, BITE, FIGHTING, CATCH, LEVELUP
+        let selectedMode = 'fundo'; // 'fundo' or 'cefalopodes'
+        let selectedTime = 'day'; // 'day' or 'night'
+        let currentLevel = 1;
+        let totalWeight = 0; // in Kg
+        let totalScore = 0;
+        let levelTargetWeight = 3.0; // target Kg to level up
+        let levelWeightProgress = 0;
+
+        // Fishing Mechanics Variables
+        let isReeling = false;
+        let tension = 0; // 0 to 100
+        let hookDepth = 150; // Y coordinate of hook
+        let targetHookDepth = 150;
+        let lineLength = 0;
+        let currentFish = null;
+        let fishDistance = 0; // Distance remaining to bring to boat (0 = caught)
+        let biteTimer = 0;
+
+        // Visual Environment Objects
+        let wavesOffset = 0;
+        let bubbles = [];
+        let ambientFish = [];
+
+        for (let i = 0; i < 25; i++) {
+            bubbles.push({
+                x: Math.random() * GAME_WIDTH,
+                y: 200 + Math.random() * 400,
+                r: Math.random() * 3 + 1,
+                speed: Math.random() * 0.8 + 0.3
+            });
+        }
+
+        // Generate Ambient Background Fish
+        for (let i = 0; i < 8; i++) {
+            ambientFish.push({
+                x: Math.random() * GAME_WIDTH,
+                y: 220 + Math.random() * 350,
+                speed: (Math.random() - 0.5) * 1.5,
+                size: Math.random() * 12 + 8,
+                color: 'rgba(255,255,255,0.15)'
+            });
+        }
+
+        // UI Event Listeners & Mode Selection
+        const cardFundo = document.getElementById('card-mode-fundo');
+        const cardCefalopodes = document.getElementById('card-mode-cefalopodes');
+
+        cardFundo.addEventListener('click', () => {
+            selectedMode = 'fundo';
+            selectedTime = 'day';
+            cardFundo.classList.add('border-cyan-400', 'bg-slate-800/90');
+            cardCefalopodes.classList.remove('border-purple-400', 'bg-slate-800/90');
+        });
+
+        cardCefalopodes.addEventListener('click', () => {
+            selectedMode = 'cefalopodes';
+            const radioNight = document.querySelector('input[name="cefa-time"]:checked');
+            selectedTime = radioNight ? radioNight.value : 'day';
+            cardCefalopodes.classList.add('border-purple-400', 'bg-slate-800/90');
+            cardFundo.classList.remove('border-cyan-400', 'bg-slate-800/90');
+        });
+
+        document.querySelectorAll('input[name="cefa-time"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedMode = 'cefalopodes';
+                selectedTime = e.target.value;
+                cardCefalopodes.classList.add('border-purple-400', 'bg-slate-800/90');
+                cardFundo.classList.remove('border-cyan-400', 'bg-slate-800/90');
+            });
+        });
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            sounds.init();
+            startFishingSession();
+        });
+
+        document.getElementById('btn-continue-fishing').addEventListener('click', () => {
+            document.getElementById('screen-catch').classList.add('hidden');
+            resetHook();
+        });
+
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            document.getElementById('screen-levelup').classList.add('hidden');
+            currentLevel++;
+            levelWeightProgress = 0;
+            levelTargetWeight = +(3.0 + currentLevel * 2.5).toFixed(1);
+            updateHUDStats();
+            resetHook();
+        });
+
+        document.getElementById('btn-guide').addEventListener('click', () => {
+            document.getElementById('screen-guide').classList.remove('hidden');
+        });
+        document.getElementById('btn-close-guide').addEventListener('click', () => {
+            document.getElementById('screen-guide').classList.add('hidden');
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            sounds.init();
+            sounds.muted = !sounds.muted;
+            document.getElementById('sound-icon').className = sounds.muted ? 'fa-solid fa-volume-xmark text-red-400' : 'fa-solid fa-volume-high text-cyan-400';
+        });
+
+        // Key & Pointer Controls
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                sounds.init();
+                isReeling = true;
+                if (gameState === 'BITE') strikeHook();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                isReeling = false;
+            }
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            sounds.init();
+            isReeling = true;
+            if (gameState === 'BITE') strikeHook();
+        });
+
+        window.addEventListener('pointerup', () => {
+            isReeling = false;
+        });
+
+        // Game Start Initialization
+        function startFishingSession() {
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('hud-in-game').classList.remove('hidden');
+
+            // Set HUD Info
+            const modeTitle = document.getElementById('hud-mode-title');
+            const modeSub = document.getElementById('hud-mode-sub');
+            const modeIcon = document.getElementById('hud-mode-icon');
+
+            if (selectedMode === 'fundo') {
+                modeTitle.innerText = "PESCA DE FUNDO";
+                modeSub.innerText = "Dia • Sargos, Douradas, Pargos";
+                modeIcon.className = "fa-solid fa-fish text-cyan-400 text-lg";
+            } else {
+                modeTitle.innerText = "PESCA DE CEFALÓPODES";
+                modeSub.innerText = selectedTime === 'night' ? "Noite • Foco de Luz Verde (Lulas)" : "Dia • Polvos, Chocos e Lulas";
+                modeIcon.className = "fa-solid fa-dharmachakra text-purple-400 text-lg";
+            }
+
+            updateHUDStats();
+            resetHook();
+        }
+
+        function updateHUDStats() {
+            document.getElementById('stat-level').innerText = currentLevel;
+            document.getElementById('stat-weight').innerText = `${totalWeight.toFixed(2)} kg`;
+            document.getElementById('stat-score').innerText = totalScore;
+            
+            document.getElementById('hud-level-num').innerText = currentLevel;
+            document.getElementById('hud-level-target').innerText = `${levelTargetWeight.toFixed(1)} kg`;
+
+            const progressPct = Math.min(100, (levelWeightProgress / levelTargetWeight) * 100);
+            document.getElementById('hud-target-progress').style.width = `${progressPct}%`;
+        }
+
+        function resetHook() {
+            gameState = 'WAITING';
+            tension = 0;
+            hookDepth = 180; // Starts near water surface
+            // Bottom depth depends on mode
+            targetHookDepth = selectedMode === 'fundo' ? GAME_HEIGHT - 70 : GAME_HEIGHT - 120;
+            currentFish = null;
+            biteTimer = Math.random() * 200 + 150; // Random waiting time for bite
+            
+            document.getElementById('hud-tension-wrapper').classList.add('hidden');
+            document.getElementById('hud-bite-alert').classList.add('hidden');
+            sounds.playSplash();
+        }
+
+        function triggerBite() {
+            gameState = 'BITE';
+            sounds.playBiteAlert();
+            document.getElementById('hud-bite-alert').classList.remove('hidden');
+
+            // Select Fish based on mode and time
+            let pool = [];
+            if (selectedMode === 'fundo') {
+                pool = SPECIES_DB.fundo;
+                // Higher levels unlock deeper/rarer fish (Pargo/Dourada)
+                if (currentLevel < 2) pool = pool.filter(f => f.name !== 'Pargo');
+            } else {
+                pool = SPECIES_DB.cefalopodes;
+                if (selectedTime === 'night') {
+                    // Night with green light heavily favors Squids ("Lulas")
+                    pool = pool.filter(f => f.name === 'Lula da Costa');
+                }
+            }
+
+            const chosenType = pool[Math.floor(Math.random() * pool.length)];
+            
+            // Weight scales slightly with level difficulty
+            const weight = +(chosenType.minW + Math.random() * (chosenType.maxW - chosenType.minW) * (1 + currentLevel * 0.1)).toFixed(2);
+            
+            currentFish = {
+                ...chosenType,
+                weight: weight,
+                // Adjusted fight power so initial levels are smooth and fun
+                fightPower: chosenType.strength * (0.6 + weight * 0.1) * (1 + (currentLevel - 1) * 0.15),
+                pulling: false,
+                pullTimer: 0
+            };
+
+            fishDistance = 100; // 100 meters to reel in
+        }
+
+        function strikeHook() {
+            if (gameState !== 'BITE') return;
+            gameState = 'FIGHTING';
+            document.getElementById('hud-bite-alert').classList.add('hidden');
+            document.getElementById('hud-tension-wrapper').classList.remove('hidden');
+            tension = 25; // Initial tension
+        }
+
+        function update() {
+            wavesOffset += 0.03;
+
+            // Ambient Bubbles movement
+            bubbles.forEach(b => {
+                b.y -= b.speed;
+                if (b.y < 160) b.y = GAME_HEIGHT - 20;
+            });
+
+            // Ambient Fish movement
+            ambientFish.forEach(f => {
+                f.x += f.speed;
+                if (f.x > GAME_WIDTH + 50) f.x = -50;
+                if (f.x < -50) f.x = GAME_WIDTH + 50;
+            });
+
+            // WAITING STATE: Hook Sinking
+            if (gameState === 'WAITING') {
+                if (hookDepth < targetHookDepth) {
+                    hookDepth += 2.5; // Sinking speed
+                } else {
+                    // Reached bottom, count down to bite
+                    biteTimer--;
+                    if (biteTimer <= 0) {
+                        triggerBite();
+                    }
+                }
+            }
+
+            // BITE STATE: Window to respond
+            if (gameState === 'BITE') {
+                // If player doesn't react in time, fish escapes
+                biteTimer++;
+                if (biteTimer > 180) { // ~3 seconds
+                    document.getElementById('hud-bite-alert').classList.add('hidden');
+                    resetHook();
+                }
+            }
+
+            // FIGHTING STATE: Tension & Reeling Physics
+            if (gameState === 'FIGHTING' && currentFish) {
+                
+                // Fish Fight Cycles
+                currentFish.pullTimer--;
+                if (currentFish.pullTimer <= 0) {
+                    currentFish.pulling = !currentFish.pulling;
+                    currentFish.pullTimer = currentFish.pulling ? (Math.random() * 50 + 30) : (Math.random() * 70 + 40);
+                }
+
+                // Update text guidance indicator
+                const statusTxt = document.getElementById('fight-status-text');
+                if (statusTxt) {
+                    if (currentFish.pulling) {
+                        statusTxt.innerText = "⚠️ PEIXE A PUXAR COM FORÇA! SOLTA O BOTÃO/ESPAÇO!";
+                        statusTxt.className = "text-[11px] font-bold text-center mt-1 text-red-400 animate-pulse";
+                    } else {
+                        statusTxt.innerText = "🟢 PEIXE CANSADO! MANTÉM PRESSIONADO PARA ENROLAR!";
+                        statusTxt.className = "text-[11px] font-bold text-center mt-1 text-emerald-400";
+                    }
+                }
+
+                // Reeling tension logic
+                if (isReeling) {
+                    // Balanced tension accumulation
+                    tension += 0.45 + (0.12 * currentFish.fightPower);
+                    
+                    // Bonus reeling speed in sweet spot (30% to 75%)
+                    const reelSpeed = (tension >= 30 && tension <= 75) ? 0.65 : 0.4;
+                    fishDistance -= reelSpeed; // Bring fish closer
+                    sounds.playReelClick();
+                } else {
+                    // Fast tension relief when letting go
+                    tension -= 1.35;
+                }
+
+                // Fish pulling adds extra tension and drags line back
+                if (currentFish.pulling) {
+                    tension += 0.35 * currentFish.fightPower;
+                    fishDistance += 0.08; // Fish pulls away slightly
+                }
+
+                // Keep tension within 0 - 100
+                tension = Math.max(0, tension);
+
+                // Update UI Tension Bar
+                const fill = document.getElementById('tension-bar-fill');
+                const pctText = document.getElementById('tension-percentage');
+                fill.style.width = `${tension}%`;
+                pctText.innerText = `${Math.floor(tension)}%`;
+
+                // Tension color state
+                if (tension > 85) {
+                    fill.className = "h-full rounded-lg bg-red-600 transition-all duration-75 tension-danger";
+                } else if (tension > 60) {
+                    fill.className = "h-full rounded-lg bg-amber-400 transition-all duration-75";
+                } else {
+                    fill.className = "h-full rounded-lg bg-emerald-500 transition-all duration-75";
+                }
+
+                // Hook Depth follows distance progress
+                hookDepth = targetHookDepth - ((100 - fishDistance) / 100) * (targetHookDepth - 180);
+
+                // Check Line Snap (Tension >= 100)
+                if (tension >= 100) {
+                    sounds.playSnapLine();
+                    document.getElementById('hud-tension-wrapper').classList.add('hidden');
+                    gameState = 'WAITING';
+                    resetHook();
+                    return;
+                }
+
+                // Check Catch Success (Fish Distance <= 0)
+                if (fishDistance <= 0) {
+                    catchSuccess();
+                }
+            }
+        }
+
+        function catchSuccess() {
+            gameState = 'CATCH';
+            sounds.playCatchVictory();
+            document.getElementById('hud-tension-wrapper').classList.add('hidden');
+
+            const points = Math.floor(currentFish.weight * 100 * (1 + currentLevel * 0.2));
+            totalWeight += currentFish.weight;
+            levelWeightProgress += currentFish.weight;
+            totalScore += points;
+
+            updateHUDStats();
+
+            // Populate Catch Modal
+            document.getElementById('catch-title').innerText = currentFish.name;
+            document.getElementById('catch-weight').innerText = `${currentFish.weight} kg`;
+            document.getElementById('catch-points').innerText = `+${points} pts`;
+            document.getElementById('catch-desc').innerText = `"${currentFish.desc}"`;
+            
+            const iconBg = document.getElementById('catch-icon-bg');
+            iconBg.style.borderColor = currentFish.color;
+
+            document.getElementById('screen-catch').classList.remove('hidden');
+
+            // Check Level Up Progress
+            if (levelWeightProgress >= levelTargetWeight) {
+                setTimeout(() => {
+                    document.getElementById('screen-catch').classList.add('hidden');
+                    document.getElementById('screen-levelup').classList.remove('hidden');
+                    document.getElementById('levelup-title').innerText = `SUBISTE PARA O NÍVEL ${currentLevel + 1}!`;
+                }, 1800);
+            }
+        }
+
+        function draw() {
+            // Background Sky according to time of day
+            if (selectedTime === 'night') {
+                // Night Sky
+                ctx.fillStyle = '#030712';
+                ctx.fillRect(0, 0, GAME_WIDTH, 160);
+                // Stars
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(200, 30, 2, 2);
+                ctx.fillRect(500, 50, 3, 3);
+                ctx.fillRect(800, 25, 2, 2);
+                ctx.fillRect(950, 70, 2, 2);
+            } else {
+                // Day Sky
+                const skyGradient = ctx.createLinearGradient(0, 0, 0, 160);
+                skyGradient.addColorStop(0, '#38bdf8');
+                skyGradient.addColorStop(1, '#bae6fd');
+                ctx.fillStyle = skyGradient;
+                ctx.fillRect(0, 0, GAME_WIDTH, 160);
+
+                // Sun
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(900, 50, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Sea Water Gradient
+            const seaGradient = ctx.createLinearGradient(0, 160, 0, GAME_HEIGHT);
+            if (selectedTime === 'night') {
+                seaGradient.addColorStop(0, '#0284c7');
+                seaGradient.addColorStop(0.3, '#0f172a');
+                seaGradient.addColorStop(1, '#020617');
+            } else {
+                seaGradient.addColorStop(0, '#0ea5e9');
+                seaGradient.addColorStop(0.4, '#0369a1');
+                seaGradient.addColorStop(1, '#0f172a');
+            }
+            ctx.fillStyle = seaGradient;
+            ctx.fillRect(0, 160, GAME_WIDTH, GAME_HEIGHT - 160);
+
+            // Submarine Green Attractor Light (Night Lula Mode)
+            if (selectedTime === 'night') {
+                ctx.save();
+                const lightGlow = ctx.createRadialGradient(260, 240, 10, 260, 240, 220);
+                lightGlow.addColorStop(0, 'rgba(34, 197, 94, 0.45)');
+                lightGlow.addColorStop(1, 'rgba(34, 197, 94, 0)');
+                ctx.fillStyle = lightGlow;
+                ctx.beginPath();
+                ctx.arc(260, 240, 220, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Animated Waves Line on Surface
+            ctx.fillStyle = selectedTime === 'night' ? '#0369a1' : '#38bdf8';
+            ctx.beginPath();
+            ctx.moveTo(0, 160);
+            for (let x = 0; x <= GAME_WIDTH; x += 40) {
+                const y = 160 + Math.sin(wavesOffset + x * 0.015) * 6;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(GAME_WIDTH, 160);
+            ctx.fill();
+
+            // Seabed / Rock Formations
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(0, GAME_HEIGHT);
+            ctx.lineTo(0, GAME_HEIGHT - 40);
+            ctx.quadraticCurveTo(200, GAME_HEIGHT - 80, 450, GAME_HEIGHT - 40);
+            ctx.quadraticCurveTo(700, GAME_HEIGHT - 20, GAME_WIDTH, GAME_HEIGHT - 60);
+            ctx.lineTo(GAME_WIDTH, GAME_HEIGHT);
+            ctx.fill();
+
+            // Seaweed details
+            ctx.strokeStyle = '#15803d';
+            ctx.lineWidth = 4;
+            for (let i = 100; i < GAME_WIDTH; i += 220) {
+                ctx.beginPath();
+                ctx.moveTo(i, GAME_HEIGHT - 30);
+                ctx.quadraticCurveTo(i + Math.sin(wavesOffset) * 15, GAME_HEIGHT - 70, i, GAME_HEIGHT - 110);
+                ctx.stroke();
+            }
+
+            // Draw Bubbles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            bubbles.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Background Ambient Fish
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ambientFish.forEach(f => {
+                ctx.beginPath();
+                ctx.ellipse(f.x, f.y, f.size, f.size/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Fishing Boat
+            const boatX = 220;
+            const boatY = 135 + Math.sin(wavesOffset) * 4;
+
+            ctx.save();
+            // Hull
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(boatX - 70, boatY);
+            ctx.lineTo(boatX + 80, boatY);
+            ctx.lineTo(boatX + 60, boatY + 30);
+            ctx.lineTo(boatX - 50, boatY + 30);
+            ctx.closePath();
+            ctx.fill();
+
+            // Cabin
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(boatX - 30, boatY - 35, 45, 35);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(boatX - 20, boatY - 25, 15, 12); // Window
+
+            // Fishing Rod
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(boatX + 40, boatY - 10);
+            ctx.lineTo(boatX + 130, boatY - 55); // Tip of rod
+            ctx.stroke();
+            ctx.restore();
+
+            // Fishing Line
+            const rodTipX = boatX + 130;
+            const rodTipY = boatY - 55;
+
+            ctx.strokeStyle = gameState === 'FIGHTING' && tension > 75 ? 'rgba(239, 68, 68, 0.8)' : 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(rodTipX, rodTipY);
+            
+            // Curved line if tension is low, straight if tight
+            if (gameState === 'FIGHTING') {
+                ctx.lineTo(rodTipX + (Math.random() - 0.5) * 3, hookDepth);
+            } else {
+                ctx.quadraticCurveTo(rodTipX + 15, (rodTipY + hookDepth) / 2, rodTipX, hookDepth);
+            }
+            ctx.stroke();
+
+            // Draw Lure / Sinker / Jig
+            ctx.fillStyle = selectedMode === 'cefalopodes' ? '#e11d48' : '#94a3b8';
+            ctx.beginPath();
+            ctx.arc(rodTipX, hookDepth, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hook details / Egis Feathers
+            if (selectedMode === 'cefalopodes') {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(rodTipX, hookDepth);
+                ctx.lineTo(rodTipX - 8, hookDepth + 8);
+                ctx.stroke();
+            }
+
+            // Draw Hooked Fish (When Fighting or Bite)
+            if ((gameState === 'FIGHTING' || gameState === 'BITE') && currentFish) {
+                ctx.save();
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = currentFish.color;
+                ctx.fillStyle = currentFish.color;
+
+                // Draw Fish/Cephalopod Body
+                const fX = rodTipX + (Math.random() - 0.5) * 6;
+                const fY = hookDepth + 12;
+
+                ctx.beginPath();
+                if (selectedMode === 'cefalopodes') {
+                    // Squid / Octopus shape
+                    ctx.ellipse(fX, fY, 14, 22, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Tentacles
+                    ctx.strokeStyle = currentFish.color;
+                    ctx.lineWidth = 2;
+                    for (let t = -10; t <= 10; t += 5) {
+                        ctx.beginPath();
+                        ctx.moveTo(fX + t, fY + 15);
+                        ctx.lineTo(fX + t * 1.5, fY + 32 + Math.sin(wavesOffset * 3) * 5);
+                        ctx.stroke();
+                    }
+                } else {
+                    // Fish shape
+                    ctx.ellipse(fX, fY, 22, 12, 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Tail
+                    ctx.beginPath();
+                    ctx.moveTo(fX + 18, fY);
+                    ctx.lineTo(fX + 30, fY - 10);
+                    ctx.lineTo(fX + 30, fY + 10);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function() {
+            gameLoop();
+        };
+    </script>
+</body>
+</html>

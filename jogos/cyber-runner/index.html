@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anti-Gravity Cyber Runner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #090a0f;
+            color: #ffffff;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Neon Glow Effects */
+        .glow-cyan { text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.4); }
+        .glow-pink { text-shadow: 0 0 10px rgba(236, 72, 153, 0.8), 0 0 20px rgba(236, 72, 153, 0.4); }
+        .box-glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), inset 0 0 15px rgba(6, 182, 212, 0.2); }
+        .box-glow-pink { box-shadow: 0 0 15px rgba(236, 72, 153, 0.5), inset 0 0 15px rgba(236, 72, 153, 0.2); }
+        
+        /* Canvas Responsive Container */
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            height: 600px;
+            margin: auto;
+        }
+
+        /* Glassmorphism overlays */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 bg-slate-950">
+
+    <!-- Outer App Wrapper -->
+    <div class="w-full max-w-4xl flex flex-col items-center">
+        
+        <!-- Header / Bar -->
+        <header class="w-full flex justify-between items-center mb-3 px-2">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-atom text-cyan-400 text-3xl animate-spin" style="animation-duration: 8s;"></i>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-indigo-400">
+                        ANTI-GRAVITY
+                    </h1>
+                    <p class="text-xs text-slate-400 tracking-widest uppercase">Cybernetic Physics Runner</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button id="btn-sound" class="p-2 sm:px-3 sm:py-1.5 rounded-lg glass-panel text-slate-300 hover:text-cyan-400 transition hover:border-cyan-500/50 flex items-center gap-2">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                    <span class="hidden sm:inline text-xs font-bold font-orbitron">SOM</span>
+                </button>
+                <button id="btn-controls" class="p-2 sm:px-3 sm:py-1.5 rounded-lg glass-panel text-slate-300 hover:text-cyan-400 transition hover:border-cyan-500/50 flex items-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span class="hidden sm:inline text-xs font-bold font-orbitron">AJUDA</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Game Box -->
+        <div id="game-container" class="rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl bg-black w-full relative">
+            
+            <!-- Canvas Element -->
+            <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+            <!-- HUD Overlay (In-Game Stats) -->
+            <div id="hud" class="absolute top-0 left-0 w-full p-4 pointer-events-none flex justify-between items-start hidden">
+                <!-- Left: Score & Distance -->
+                <div class="flex flex-col gap-1">
+                    <div class="text-xs uppercase text-cyan-400 tracking-wider font-bold">Pontuação</div>
+                    <div id="hud-score" class="text-3xl sm:text-4xl font-black font-orbitron text-white glow-cyan">0</div>
+                    <div id="hud-multiplier" class="text-xs text-fuchsia-400 font-bold tracking-widest hidden">2x MULTIPLICADOR</div>
+                </div>
+
+                <!-- Center: Active Powerups -->
+                <div id="hud-powerups" class="flex gap-2">
+                    <!-- Powerups dynamically inserted here -->
+                </div>
+
+                <!-- Right: High Score & Orbs -->
+                <div class="flex flex-col items-end gap-1">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold font-orbitron">
+                        <i class="fa-solid fa-bolt text-sm"></i>
+                        <span id="hud-orbs" class="text-lg">0</span>
+                    </div>
+                    <div class="text-xs text-slate-400">Recorde: <span id="hud-highscore" class="font-bold text-slate-200">0</span></div>
+                </div>
+            </div>
+
+            <!-- Start Screen Overlay -->
+            <div id="screen-start" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-10">
+                <div class="w-20 h-20 mb-4 rounded-2xl bg-gradient-to-tr from-cyan-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 animate-pulse">
+                    <i class="fa-solid fa-arrows-up-down text-4xl text-white"></i>
+                </div>
+                
+                <h2 class="text-3xl sm:text-5xl font-black font-orbitron mb-2 tracking-wide text-white">
+                    INVERTA A GRAVIDADE
+                </h2>
+                <p class="text-sm sm:text-base text-slate-300 max-w-md mb-8 leading-relaxed">
+                    Evite os obstáculos azuis e vermelhos alterando a gravidade. Recolha orbes de energia para pontuação extra e power-ups!
+                </p>
+
+                <div class="flex flex-wrap gap-4 justify-center items-center mb-8">
+                    <button id="btn-start" class="px-8 py-4 bg-gradient-to-r from-cyan-500 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white font-black font-orbitron text-lg rounded-xl shadow-lg shadow-cyan-500/25 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3">
+                        <i class="fa-solid fa-play"></i> JOGAR AGORA
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-6 text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                    <span class="flex items-center gap-2"><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-200">ESPAÇO</kbd> Inverter</span>
+                    <span class="flex items-center gap-2"><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-200">CLIQUE / TOQUE</kbd> Inverter</span>
+                </div>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div id="screen-gameover" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                <div class="w-16 h-16 mb-3 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center text-red-400 text-3xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+
+                <h2 class="text-3xl sm:text-4xl font-black font-orbitron text-red-500 mb-1 tracking-wider">
+                    COLISÃO DETETADA!
+                </h2>
+                <p class="text-xs text-slate-400 mb-6 uppercase tracking-widest">Fim de Jogo</p>
+
+                <!-- Final Stats -->
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-slate-400">Pontuação</span>
+                        <span id="go-score" class="text-2xl font-black font-orbitron text-cyan-400">0</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs text-slate-400">Orbes</span>
+                        <span id="go-orbs" class="text-2xl font-black font-orbitron text-amber-400">0</span>
+                    </div>
+                </div>
+
+                <div id="new-record-badge" class="hidden mb-6 px-4 py-1.5 bg-amber-500/20 border border-amber-500/50 rounded-full text-amber-300 font-bold text-xs tracking-widest uppercase animate-bounce">
+                    <i class="fa-solid fa-trophy mr-1"></i> Novo Recorde!
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="btn-restart" class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white font-bold font-orbitron rounded-xl shadow-lg shadow-cyan-500/25 transition transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> JOGAR DE NOVO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Help / Controls Modal -->
+            <div id="screen-help" class="absolute inset-0 glass-panel flex flex-col items-center justify-center p-6 text-center z-30 hidden">
+                <h3 class="text-2xl font-black font-orbitron text-cyan-400 mb-4">COMO JOGAR</h3>
+                <div class="space-y-3 text-sm text-slate-300 max-w-sm text-left mb-6">
+                    <p class="flex items-start gap-3"><i class="fa-solid fa-shield-halved text-cyan-400 mt-1"></i> <span><strong>Gravidade Invertida:</strong> Muda o campo gravítico para andar no chão ou no teto.</span></p>
+                    <p class="flex items-start gap-3"><i class="fa-solid fa-burst text-red-400 mt-1"></i> <span><strong>Obstáculos:</strong> Evite blocos, serras rotativas e barreiras laser.</span></p>
+                    <p class="flex items-start gap-3"><i class="fa-solid fa-circle-dot text-amber-400 mt-1"></i> <span><strong>Orbes:</strong> Aumentam a tua pontuação e carregam a velocidade.</span></p>
+                    <p class="flex items-start gap-3"><i class="fa-solid fa-gem text-fuchsia-400 mt-1"></i> <span><strong>Power-ups:</strong> Escudos protegem de um impacto; Ímanes atraem orbes.</span></p>
+                </div>
+                <button id="btn-close-help" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold font-orbitron rounded-lg border border-slate-700">
+                    FECHAR
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Footer Info -->
+        <footer class="w-full mt-3 flex justify-between items-center text-xs text-slate-500 px-2">
+            <span>Anti-Gravity Arcade Edition</span>
+            <span>Controlo: TECLA ESPAÇO / CLIQUE NO RATO</span>
+        </footer>
+
+    </div>
+
+    <script>
+        /* Retro Web Audio Synthesizer (Zero External Assets needed) */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playFlip() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.12);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playOrb() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.05); // E5
+                osc.frequency.setValueAtTime(783.99, this.ctx.currentTime + 0.1); // G5
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playPowerup() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.25);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCrash() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Internal Game Resolution
+        const GAME_WIDTH = 1000;
+        const GAME_HEIGHT = 600;
+        
+        function resizeCanvas() {
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+        }
+        resizeCanvas();
+
+        // Game State Variables
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let score = 0;
+        let highscore = parseInt(localStorage.getItem('antigrav_highscore') || '0');
+        let orbsCollected = 0;
+        let gameSpeed = 6;
+        let baseSpeed = 6;
+        let distance = 0;
+        let frameCount = 0;
+
+        // Player physics & parameters
+        const player = {
+            x: 120,
+            y: 0,
+            width: 34,
+            height: 34,
+            vy: 0,
+            gravityDirection: 1, // 1 = down, -1 = up
+            gravityForce: 1.1,
+            isGrounded: false,
+            rotation: 0,
+            trail: [],
+            shield: false,
+            magnet: false,
+            magnetTimer: 0,
+            color: '#06b6d4'
+        };
+
+        // Track Ceiling & Floor Bounds
+        const bounds = {
+            top: 50,
+            bottom: GAME_HEIGHT - 50
+        };
+
+        // Entities lists
+        let obstacles = [];
+        let collectibles = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        function createExplosion(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: Math.random() * 4 + 2,
+                    color: color,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.015
+                });
+            }
+        }
+
+        function createFloatingText(x, y, text, color = '#ffffff') {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                vy: -1.5,
+                text: text,
+                color: color,
+                alpha: 1
+            });
+        }
+
+        function spawnObstacle() {
+            const minGap = 200;
+            const typeRand = Math.random();
+            
+            // Type 1: Floor or Ceiling Block
+            if (typeRand < 0.45) {
+                const isCeiling = Math.random() < 0.5;
+                const height = Math.random() * 100 + 60;
+                const width = Math.random() * 40 + 40;
+                obstacles.push({
+                    x: GAME_WIDTH + 50,
+                    y: isCeiling ? bounds.top : bounds.bottom - height,
+                    width: width,
+                    height: height,
+                    type: 'block',
+                    color: '#ec4899'
+                });
+            } 
+            // Type 2: Mid-air Laser Barrier
+            else if (typeRand < 0.8) {
+                const height = 120;
+                const yPos = bounds.top + Math.random() * (bounds.bottom - bounds.top - height);
+                obstacles.push({
+                    x: GAME_WIDTH + 50,
+                    y: yPos,
+                    width: 24,
+                    height: height,
+                    type: 'laser',
+                    pulse: 0,
+                    color: '#f43f5e'
+                });
+            }
+            // Type 3: Rotating Saw / Spike hazard
+            else {
+                const isCeiling = Math.random() < 0.5;
+                const size = 50;
+                obstacles.push({
+                    x: GAME_WIDTH + 50,
+                    y: isCeiling ? bounds.top + size/2 : bounds.bottom - size/2,
+                    size: size,
+                    type: 'saw',
+                    angle: 0,
+                    color: '#e11d48'
+                });
+            }
+        }
+
+        function spawnCollectible() {
+            const yPos = bounds.top + Math.random() * (bounds.bottom - bounds.top - 40);
+            const rand = Math.random();
+
+            if (rand < 0.8) {
+                // Energy Orb
+                collectibles.push({
+                    x: GAME_WIDTH + 50,
+                    y: yPos,
+                    radius: 12,
+                    type: 'orb',
+                    color: '#fbbf24'
+                });
+            } else if (rand < 0.9) {
+                // Shield Powerup
+                collectibles.push({
+                    x: GAME_WIDTH + 50,
+                    y: yPos,
+                    radius: 16,
+                    type: 'shield',
+                    color: '#38bdf8'
+                });
+            } else {
+                // Magnet Powerup
+                collectibles.push({
+                    x: GAME_WIDTH + 50,
+                    y: yPos,
+                    radius: 16,
+                    type: 'magnet',
+                    color: '#a855f7'
+                });
+            }
+        }
+
+        function flipGravity() {
+            if (gameState !== 'PLAYING') return;
+            
+            player.gravityDirection *= -1;
+            sounds.playFlip();
+
+            // Spawn dynamic flip pulse particles at feet/head
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: player.x + player.width / 2,
+                    y: player.gravityDirection === 1 ? player.y : player.y + player.height,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: player.gravityDirection * (Math.random() * 4 + 2),
+                    size: Math.random() * 4 + 2,
+                    color: '#06b6d4',
+                    alpha: 1,
+                    decay: 0.04
+                });
+            }
+        }
+
+        // Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+                e.preventDefault();
+                if (gameState === 'PLAYING') {
+                    flipGravity();
+                } else if (gameState === 'START') {
+                    startGame();
+                }
+            }
+        });
+
+        // Mouse / Touch Listener on Canvas
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            sounds.init();
+            if (gameState === 'PLAYING') {
+                flipGravity();
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            sounds.init();
+            if (gameState === 'PLAYING') {
+                flipGravity();
+            }
+        });
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            frameCount++;
+            distance += gameSpeed * 0.1;
+            score = Math.floor(distance) + (orbsCollected * 50);
+
+            // Gradually increase difficulty speed
+            gameSpeed = baseSpeed + Math.floor(score / 500) * 0.5;
+
+            // Player Gravity Physics
+            player.vy += player.gravityForce * player.gravityDirection;
+            player.y += player.vy;
+
+            // Ceiling / Floor Collision
+            if (player.y + player.height >= bounds.bottom) {
+                player.y = bounds.bottom - player.height;
+                player.vy = 0;
+                player.isGrounded = true;
+            } else if (player.y <= bounds.top) {
+                player.y = bounds.top;
+                player.vy = 0;
+                player.isGrounded = true;
+            } else {
+                player.isGrounded = false;
+            }
+
+            // Player Trail
+            if (frameCount % 2 === 0) {
+                player.trail.push({
+                    x: player.x,
+                    y: player.y,
+                    alpha: 0.6
+                });
+                if (player.trail.length > 8) player.trail.shift();
+            }
+
+            // Update Magnet Powerup
+            if (player.magnet) {
+                player.magnetTimer--;
+                if (player.magnetTimer <= 0) {
+                    player.magnet = false;
+                }
+            }
+
+            // Spawn Obstacles & Collectibles
+            if (frameCount % Math.max(45, 90 - Math.floor(gameSpeed * 3)) === 0) {
+                spawnObstacle();
+            }
+            if (frameCount % 70 === 0) {
+                spawnCollectible();
+            }
+
+            // Update Obstacles & Collision Check
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= gameSpeed;
+
+                // Collision detection box vs player
+                let hit = false;
+                if (obs.type === 'block' || obs.type === 'laser') {
+                    if (player.x < obs.x + obs.width &&
+                        player.x + player.width > obs.x &&
+                        player.y < obs.y + obs.height &&
+                        player.y + player.height > obs.y) {
+                        hit = true;
+                    }
+                } else if (obs.type === 'saw') {
+                    // Circle collision
+                    const dx = (player.x + player.width / 2) - obs.x;
+                    const dy = (player.y + player.height / 2) - obs.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < obs.size / 2 + player.width / 2) {
+                        hit = true;
+                    }
+                }
+
+                if (hit) {
+                    if (player.shield) {
+                        // Shield absorbs hit
+                        player.shield = false;
+                        createExplosion(player.x + player.width/2, player.y + player.height/2, '#38bdf8', 25);
+                        createFloatingText(player.x, player.y, 'ESCUDO DESTRUÍDO!', '#38bdf8');
+                        sounds.playCrash();
+                        obstacles.splice(i, 1);
+                        continue;
+                    } else {
+                        // Game Over Trigger
+                        triggerGameOver();
+                        return;
+                    }
+                }
+
+                // Remove offscreen obstacles
+                if (obs.x < -100) obstacles.splice(i, 1);
+            }
+
+            // Update Collectibles & Magnet Pull
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const item = collectibles[i];
+                item.x -= gameSpeed;
+
+                // Magnet pull logic
+                if (player.magnet) {
+                    const dx = (player.x + player.width/2) - item.x;
+                    const dy = (player.y + player.height/2) - item.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 220) {
+                        item.x += (dx / dist) * 8;
+                        item.y += (dy / dist) * 8;
+                    }
+                }
+
+                // Collect check
+                const dx = (player.x + player.width/2) - item.x;
+                const dy = (player.y + player.height/2) - item.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < item.radius + player.width/2) {
+                    if (item.type === 'orb') {
+                        orbsCollected++;
+                        sounds.playOrb();
+                        createExplosion(item.x, item.y, '#fbbf24', 10);
+                        createFloatingText(item.x, item.y, '+50', '#fbbf24');
+                    } else if (item.type === 'shield') {
+                        player.shield = true;
+                        sounds.playPowerup();
+                        createFloatingText(item.x, item.y, 'ESCUDO ATIVO!', '#38bdf8');
+                    } else if (item.type === 'magnet') {
+                        player.magnet = true;
+                        player.magnetTimer = 300; // ~5 seconds
+                        sounds.playPowerup();
+                        createFloatingText(item.x, item.y, 'ÍMAN ATIVO!', '#a855f7');
+                    }
+                    collectibles.splice(i, 1);
+                    continue;
+                }
+
+                if (item.x < -50) collectibles.splice(i, 1);
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Update Floating Text
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y += ft.vy;
+                ft.alpha -= 0.02;
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+
+            // Update HUD Overlay
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-orbs').innerText = orbsCollected;
+
+            // Render HUD Active Powerup Indicators
+            const powerupBox = document.getElementById('hud-powerups');
+            powerupBox.innerHTML = '';
+            if (player.shield) {
+                powerupBox.innerHTML += `<div class="px-2 py-1 rounded bg-sky-500/20 border border-sky-400 text-sky-300 text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-shield"></i> ESCUDO</div>`;
+            }
+            if (player.magnet) {
+                powerupBox.innerHTML += `<div class="px-2 py-1 rounded bg-purple-500/20 border border-purple-400 text-purple-300 text-xs font-bold flex items-center gap-1"><i class="fa-solid fa-magnet"></i> ÍMAN</div>`;
+            }
+        }
+
+        function draw() {
+            // Clear Canvas
+            ctx.fillStyle = '#090a0f';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Draw Parallax Grid Lines in Background
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+            ctx.lineWidth = 1;
+            const gridOffset = (frameCount * (gameSpeed * 0.5)) % 40;
+            for (let x = -gridOffset; x < GAME_WIDTH; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, GAME_HEIGHT);
+                ctx.stroke();
+            }
+
+            // Draw Top and Bottom Neon Boundary Rails
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, GAME_WIDTH, bounds.top);
+            ctx.fillRect(0, bounds.bottom, GAME_WIDTH, GAME_HEIGHT - bounds.bottom);
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#06b6d4';
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 3;
+
+            // Top boundary line
+            ctx.beginPath();
+            ctx.moveTo(0, bounds.top);
+            ctx.lineTo(GAME_WIDTH, bounds.top);
+            ctx.stroke();
+
+            // Bottom boundary line
+            ctx.beginPath();
+            ctx.moveTo(0, bounds.bottom);
+            ctx.lineTo(GAME_WIDTH, bounds.bottom);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // reset glow
+
+            if (gameState === 'PLAYING' || gameState === 'GAMEOVER') {
+
+                // Draw Collectibles
+                collectibles.forEach(item => {
+                    ctx.save();
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = item.color;
+                    ctx.fillStyle = item.color;
+                    ctx.beginPath();
+                    ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Inner highlight icon/detail
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(item.x - item.radius*0.3, item.y - item.radius*0.3, item.radius*0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Draw Obstacles
+                obstacles.forEach(obs => {
+                    ctx.save();
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = obs.color;
+                    ctx.fillStyle = obs.color;
+
+                    if (obs.type === 'block') {
+                        ctx.beginPath();
+                        ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 8);
+                        ctx.fill();
+                    } else if (obs.type === 'laser') {
+                        // Pulsing laser
+                        ctx.fillStyle = 'rgba(244, 63, 94, 0.8)';
+                        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(obs.x + 8, obs.y, 8, obs.height);
+                    } else if (obs.type === 'saw') {
+                        obs.angle += 0.1;
+                        ctx.translate(obs.x, obs.y);
+                        ctx.rotate(obs.angle);
+                        ctx.beginPath();
+                        const spikes = 8;
+                        const outerR = obs.size / 2;
+                        const innerR = obs.size / 4;
+                        for (let i = 0; i < spikes * 2; i++) {
+                            const r = (i % 2 === 0) ? outerR : innerR;
+                            const a = (i / (spikes * 2)) * Math.PI * 2;
+                            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                });
+
+                // Draw Player Trail
+                player.trail.forEach((t, index) => {
+                    ctx.fillStyle = `rgba(6, 182, 212, ${t.alpha * (index / player.trail.length)})`;
+                    ctx.beginPath();
+                    ctx.roundRect(t.x, t.y, player.width, player.height, 6);
+                    ctx.fill();
+                });
+
+                // Draw Player
+                ctx.save();
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = player.shield ? '#38bdf8' : '#06b6d4';
+
+                // Core Body
+                ctx.fillStyle = player.shield ? '#38bdf8' : '#06b6d4';
+                ctx.beginPath();
+                ctx.roundRect(player.x, player.y, player.width, player.height, 8);
+                ctx.fill();
+
+                // Eyes / Visor according to Gravity Direction
+                ctx.fillStyle = '#ffffff';
+                const visorY = player.gravityDirection === 1 ? player.y + 20 : player.y + 6;
+                ctx.fillRect(player.x + 18, visorY, 10, 6);
+
+                // Shield Field Glow
+                if (player.shield) {
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width * 0.8, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+
+                // Draw Particle Explosions
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Draw Floating Texts
+                floatingTexts.forEach(ft => {
+                    ctx.save();
+                    ctx.globalAlpha = ft.alpha;
+                    ctx.fillStyle = ft.color;
+                    ctx.font = 'bold 16px Orbitron';
+                    ctx.fillText(ft.text, ft.x, ft.y);
+                    ctx.restore();
+                });
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            score = 0;
+            orbsCollected = 0;
+            distance = 0;
+            gameSpeed = baseSpeed;
+            frameCount = 0;
+
+            player.y = bounds.bottom - player.height;
+            player.vy = 0;
+            player.gravityDirection = 1;
+            player.shield = false;
+            player.magnet = false;
+
+            obstacles = [];
+            collectibles = [];
+            particles = [];
+            floatingTexts = [];
+
+            // UI Adjustments
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('hud-highscore').innerText = highscore;
+        }
+
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            sounds.playCrash();
+
+            // Record updates
+            let isNewRecord = false;
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('antigrav_highscore', highscore.toString());
+                isNewRecord = true;
+            }
+
+            // Update GameOver Modal Data
+            document.getElementById('go-score').innerText = score;
+            document.getElementById('go-orbs').innerText = orbsCollected;
+            
+            const badge = document.getElementById('new-record-badge');
+            if (isNewRecord) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            document.getElementById('screen-gameover').classList.remove('hidden');
+        }
+
+        // Attach UI Buttons Listeners
+        document.getElementById('btn-start').addEventListener('click', () => {
+            sounds.init();
+            startGame();
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            startGame();
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            sounds.init();
+            sounds.muted = !sounds.muted;
+            const icon = document.getElementById('sound-icon');
+            icon.className = sounds.muted ? 'fa-solid fa-volume-xmark text-red-400' : 'fa-solid fa-volume-high text-cyan-400';
+        });
+
+        document.getElementById('btn-controls').addEventListener('click', () => {
+            document.getElementById('screen-help').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-help').addEventListener('click', () => {
+            document.getElementById('screen-help').classList.add('hidden');
+        });
+
+        // Initialize Animation Loop
+        window.onload = function() {
+            gameLoop();
+        };
+    </script>
+</body>
+</html>

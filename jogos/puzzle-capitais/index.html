@@ -1,0 +1,266 @@
+@'
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo das Capitais do Mundo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #475569;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #0f172a;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-width: 750px;
+            width: 100%;
+        }
+        .card {
+            background-color: #2563eb;
+            color: transparent;
+            height: 85px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.3s, color 0.3s;
+            text-align: center;
+            padding: 8px;
+        }
+        .card:hover {
+            transform: scale(1.03);
+        }
+        .card.flipped {
+            background-color: #ffffff;
+            color: #1e293b;
+            border: 2px solid #2563eb;
+        }
+        .card.matched {
+            background-color: #22c55e !important;
+            color: #ffffff !important;
+            border: none;
+            cursor: default;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #0369a1;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌎 Desafio: Capitais do Mundo</h1>
+    <p>Encontre os 8 pares corretos. Ao recomeçar, surgem novos países!</p>
+
+    <div class="stats">
+        <div>Tentativas: <span id="tentativas">0</span></div>
+        <div>Pares Encontrados: <span id="certos">0</span> / 8</div>
+    </div>
+
+    <div class="grid" id="tabuleiro"></div>
+
+    <button onclick="reiniciarJogo()">🔄 Novo Jogo (Novos Países)</button>
+
+    <script>
+        // Lista mundial de países e capitais
+        const baseMundial = [
+            // Europa
+            { pais: "Portugal", capital: "Lisboa" },
+            { pais: "Espanha", capital: "Madrid" },
+            { pais: "França", capital: "Paris" },
+            { pais: "Itália", capital: "Roma" },
+            { pais: "Alemanha", capital: "Berlim" },
+            { pais: "Reino Unido", capital: "Londres" },
+            { pais: "Grécia", capital: "Atenas" },
+            { pais: "Holanda", capital: "Amesterdão" },
+            { pais: "Suécia", capital: "Estocolmo" },
+            { pais: "Noruega", capital: "Oslo" },
+            { pais: "Bélgica", capital: "Bruxelas" },
+            { pais: "Suíça", capital: "Berna" },
+            { pais: "Áustria", capital: "Viena" },
+            { pais: "Irlanda", capital: "Dublin" },
+            { pais: "Polónia", capital: "Varsóvia" },
+            
+            // Américas
+            { pais: "Brasil", capital: "Brasília" },
+            { pais: "EUA", capital: "Washington" },
+            { pais: "Canadá", capital: "Ottawa" },
+            { pais: "México", capital: "Cidade do México" },
+            { pais: "Argentina", capital: "Buenos Aires" },
+            { pais: "Chile", capital: "Santiago" },
+            { pais: "Colômbia", capital: "Bogotá" },
+            { pais: "Peru", capital: "Lima" },
+            { pais: "Uruguai", capital: "Montevideu" },
+
+            // Ásia e Oceânia
+            { pais: "Japão", capital: "Tóquio" },
+            { pais: "China", capital: "Pequim" },
+            { pais: "Índia", capital: "Nova Deli" },
+            { pais: "Austrália", capital: "Camberra" },
+            { pais: "Coreia do Sul", capital: "Seul" },
+            { pais: "Tailândia", capital: "Bangcoque" },
+            { pais: "Nova Zelândia", capital: "Wellington" },
+
+            // África e Médio Oriente
+            { pais: "Egito", capital: "Cairo" },
+            { pais: "Marrocos", capital: "Rabat" },
+            { pais: "Angola", capital: "Luanda" },
+            { pais: "Moçambique", capital: "Maputo" },
+            { pais: "Cabo Verde", capital: "Praia" },
+            { pais: "África do Sul", capital: "Pretória" },
+            { pais: "Turquia", capital: "Ancara" }
+        ];
+
+        let primeiraCarta = null;
+        let segundaCarta = null;
+        let bloqueio = false;
+        let tentativas = 0;
+        let certos = 0;
+
+        function iniciarJogo() {
+            const tabuleiro = document.getElementById('tabuleiro');
+            tabuleiro.innerHTML = '';
+            
+            // 1. Escolher 8 pares ao acaso da lista mundial
+            let listaSorteada = [...baseMundial].sort(() => Math.random() - 0.5).slice(0, 8);
+
+            // 2. Criar cartas individuais (país e capital)
+            let listaCartas = [];
+            listaSorteada.forEach((par, index) => {
+                listaCartas.push({ texto: par.pais, parId: index });
+                listaCartas.push({ texto: par.capital, parId: index });
+            });
+
+            // 3. Baralhar as 16 cartas no ecrã
+            listaCartas.sort(() => Math.random() - 0.5);
+
+            // 4. Desenhar os quadrados
+            listaCartas.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.parId = item.parId;
+                card.innerText = item.texto;
+                card.addEventListener('click', virarCarta);
+                tabuleiro.appendChild(card);
+            });
+
+            tentativas = 0;
+            certos = 0;
+            atualizarPlacar();
+        }
+
+        function virarCarta() {
+            if (bloqueio) return;
+            if (this === primeiraCarta) return;
+            if (this.classList.contains('matched')) return;
+
+            this.classList.add('flipped');
+
+            if (!primeiraCarta) {
+                primeiraCarta = this;
+                return;
+            }
+
+            segundaCarta = this;
+            tentativas++;
+            atualizarPlacar();
+
+            verificarPar();
+        }
+
+        function verificarPar() {
+            let eIgual = primeiraCarta.dataset.parId === segundaCarta.dataset.parId;
+
+            if (eIgual) {
+                desativarCartas();
+            } else {
+                desvirarCartas();
+            }
+        }
+
+        function desativarCartas() {
+            primeiraCarta.classList.add('matched');
+            segundaCarta.classList.add('matched');
+
+            certos++;
+            atualizarPlacar();
+
+            resetarJogada();
+
+            if (certos === 8) {
+                setTimeout(() => alert('🎉 Excelente! Encontrou todas as capitais! Clique em "Novo Jogo" para novos países.'), 300);
+            }
+        }
+
+        function desvirarCartas() {
+            bloqueio = true;
+
+            setTimeout(() => {
+                primeiraCarta.classList.remove('flipped');
+                segundaCarta.classList.remove('flipped');
+                resetarJogada();
+            }, 1000);
+        }
+
+        function resetarJogada() {
+            [primeiraCarta, segundaCarta] = [null, null];
+            bloqueio = false;
+        }
+
+        function atualizarPlacar() {
+            document.getElementById('tentativas').innerText = tentativas;
+            document.getElementById('certos').innerText = certos;
+        }
+
+        function reiniciarJogo() {
+            resetarJogada();
+            iniciarJogo();
+        }
+
+        iniciarJogo();
+    </script>
+</body>
+</html>
+'@ | Out-File -Encoding utf8 "$env:USERPROFILE\Desktop\puzzle_capitais.html"

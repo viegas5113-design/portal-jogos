@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>Avô Magnético - O Construtor</title>
+    <style>
+        body {
+            background-color: #e0f7fa;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            user-select: none; /* Evita selecionar texto ao arrastar */
+        }
+        h1 { color: #00838f; margin-top: 5px; margin-bottom: 10px; }
+        .linha-botoes { margin-bottom: 10px; }
+        .categoria { font-weight: bold; color: #006064; font-size: 18px; margin-right: 10px; }
+        button {
+            padding: 8px 15px; font-size: 16px; font-weight: bold;
+            background-color: white; color: #00838f;
+            border: 2px solid #00838f; border-radius: 8px; cursor: pointer;
+            margin-right: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        button:hover { background-color: #b2ebf2; }
+        #area-jogo {
+            background-color: white;
+            border: 2px solid gray;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            touch-action: none; /* Muito importante para funcionar bem em tablets */
+        }
+        .vitoria {
+            font-size: 40px; font-weight: bold; fill: #2e7d32;
+            animation: piscar 1s infinite;
+        }
+        @keyframes piscar {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Avô Magnético - O Construtor 🧲</h1>
+
+    <div id="menu-projetos">
+        <div class="linha-botoes" id="linha1"><span class="categoria">Veículos e Casa:</span></div>
+        <div class="linha-botoes" id="linha2"><span class="categoria">Animais:</span></div>
+        <div class="linha-botoes" id="linha3"><span class="categoria">Patrulha:</span></div>
+        <div class="linha-botoes" id="linha4"><span class="categoria">Amigos:</span></div>
+    </div>
+
+    <svg id="area-jogo" width="850" height="480"></svg>
+
+    <script>
+        // O radar de projetos convertido de Python para JavaScript
+        const projetos = {
+            "Casa 🏠": [
+                ["rect", "blue", [450, 300, 600, 450]], 
+                ["poly", "red", [430, 300, 525, 200, 620, 300]], 
+                ["rect", "yellow", [500, 370, 550, 450]] 
+            ],
+            "Barco ⛵": [
+                ["poly", "purple", [400, 400, 650, 400, 600, 500, 450, 500]], 
+                ["oval", "gray", [515, 200, 535, 400]], 
+                ["poly", "orange", [530, 210, 530, 380, 650, 380]] 
+            ],
+            "Carro 🚗": [
+                ["oval", "green", [400, 350, 650, 450]], 
+                ["poly", "darkblue", [450, 280, 600, 280, 650, 350, 400, 350]], 
+                ["oval", "black", [430, 430, 490, 490]], 
+                ["oval", "black", [560, 430, 620, 490]]  
+            ],
+            "Avião ✈️": [
+                ["oval", "lightblue", [400, 300, 700, 380]], 
+                ["poly", "red", [550, 340, 650, 340, 500, 480]], 
+                ["poly", "darkred", [550, 300, 650, 300, 500, 160]], 
+                ["poly", "orange", [400, 340, 450, 340, 380, 220]] 
+            ],
+            "Cão 🐶": [
+                ["oval", "saddlebrown", [400, 300, 560, 380]], 
+                ["oval", "saddlebrown", [550, 250, 630, 330]], 
+                ["poly", "black", [560, 260, 540, 200, 590, 250]], 
+                ["poly", "black", [400, 320, 350, 280, 400, 350]], 
+                ["oval", "saddlebrown", [420, 360, 450, 450]], 
+                ["oval", "saddlebrown", [510, 360, 540, 450]],
+                ["oval", "black", [575, 275, 587, 287]], 
+                ["oval", "black", [595, 275, 607, 287]]  
+            ],
+            "Gato 😺": [
+                ["oval", "darkorange", [420, 320, 550, 420]], 
+                ["oval", "darkorange", [350, 280, 440, 360]], 
+                ["poly", "black", [360, 300, 370, 230, 400, 290]], 
+                ["poly", "black", [390, 280, 420, 220, 430, 290]], 
+                ["oval", "darkorange", [540, 350, 570, 250]],
+                ["oval", "black", [375, 305, 387, 317]], 
+                ["oval", "black", [403, 305, 415, 317]]  
+            ],
+            "Panda 🐼": [
+                ["oval", "white", [450, 300, 600, 480]], 
+                ["oval", "white", [475, 200, 575, 300]], 
+                ["oval", "black", [465, 190, 505, 230]], 
+                ["oval", "black", [545, 190, 585, 230]], 
+                ["oval", "black", [430, 320, 470, 400]], 
+                ["oval", "black", [580, 320, 620, 400]],
+                ["oval", "black", [495, 235, 515, 260]], 
+                ["oval", "black", [535, 235, 555, 260]]  
+            ],
+            "Golfinho 🐬": [
+                ["oval", "dodgerblue", [400, 300, 650, 400]], 
+                ["poly", "dodgerblue", [480, 320, 520, 220, 560, 320]], 
+                ["poly", "dodgerblue", [400, 350, 320, 280, 320, 420]], 
+                ["oval", "dodgerblue", [620, 340, 700, 370]],
+                ["oval", "black", [590, 335, 602, 347]] 
+            ],
+            "Chase 🚓": [
+                ["oval", "blue", [420, 320, 520, 420]], 
+                ["oval", "saddlebrown", [450, 250, 510, 330]], 
+                ["poly", "darkblue", [440, 260, 520, 260, 480, 210]], 
+                ["oval", "saddlebrown", [440, 400, 470, 470]], 
+                ["oval", "saddlebrown", [480, 400, 510, 470]], 
+                ["oval", "saddlebrown", [400, 340, 440, 380]],
+                ["oval", "black", [465, 280, 475, 290]], 
+                ["oval", "black", [485, 280, 495, 290]]  
+            ],
+            "Marshall 🚒": [
+                ["oval", "red", [420, 320, 520, 420]], 
+                ["oval", "white", [450, 250, 510, 330]], 
+                ["poly", "red", [440, 260, 520, 260, 480, 210]], 
+                ["oval", "white", [440, 400, 470, 470]], 
+                ["oval", "white", [480, 400, 510, 470]], 
+                ["oval", "white", [400, 340, 440, 380]],
+                ["oval", "black", [465, 280, 475, 290]], 
+                ["oval", "black", [485, 280, 495, 290]]  
+            ],
+            "Skye 🚁": [
+                ["oval", "hotpink", [420, 330, 510, 420]], 
+                ["oval", "navajowhite", [440, 260, 500, 340]], 
+                ["oval", "peru", [410, 280, 450, 350]], 
+                ["oval", "peru", [490, 280, 530, 350]], 
+                ["oval", "navajowhite", [440, 400, 470, 460]], 
+                ["oval", "navajowhite", [470, 400, 500, 460]],
+                ["oval", "black", [455, 290, 465, 300]], 
+                ["oval", "black", [475, 290, 485, 300]]  
+            ],
+            "Bluey 💙": [
+                ["oval", "steelblue", [420, 280, 500, 410]], 
+                ["oval", "lightblue", [470, 310, 530, 360]], 
+                ["poly", "darkblue", [430, 290, 450, 230, 470, 290]], 
+                ["poly", "darkblue", [460, 290, 480, 230, 500, 290]], 
+                ["oval", "lightblue", [430, 390, 460, 470]], 
+                ["oval", "lightblue", [460, 390, 490, 470]],
+                ["oval", "white", [450, 290, 465, 315]], 
+                ["oval", "white", [470, 290, 485, 315]]  
+            ],
+            "Bingo 🧡": [
+                ["oval", "darkorange", [420, 290, 500, 410]], 
+                ["oval", "navajowhite", [470, 320, 530, 370]], 
+                ["poly", "chocolate", [430, 300, 450, 240, 470, 300]], 
+                ["poly", "chocolate", [460, 300, 480, 240, 500, 300]], 
+                ["oval", "navajowhite", [430, 390, 460, 460]], 
+                ["oval", "navajowhite", [460, 390, 490, 460]],
+                ["oval", "white", [450, 300, 465, 325]], 
+                ["oval", "white", [470, 300, 485, 325]]  
+            ],
+            "Peppa 🐷": [
+                ["oval", "red", [410, 320, 530, 450]], 
+                ["oval", "lightpink", [450, 250, 520, 340]], 
+                ["oval", "lightpink", [500, 270, 560, 310]], 
+                ["oval", "hotpink", [440, 430, 460, 490]], 
+                ["oval", "hotpink", [480, 430, 500, 490]],
+                ["oval", "white", [475, 265, 487, 277]], 
+                ["oval", "white", [490, 265, 502, 277]]  
+            ]
+        };
+
+        const svg = document.getElementById("area-jogo");
+        let pecasMoveis = [];
+        let pecasEncaixadas = 0;
+
+        // Criar os botões do menu nas linhas certas
+        let contador = 0;
+        for (const nome in projetos) {
+            const btn = document.createElement("button");
+            btn.innerText = nome;
+            btn.onclick = () => carregarProjeto(nome);
+            
+            if (contador < 4) document.getElementById("linha1").appendChild(btn);
+            else if (contador < 8) document.getElementById("linha2").appendChild(btn);
+            else if (contador < 11) document.getElementById("linha3").appendChild(btn);
+            else document.getElementById("linha4").appendChild(btn);
+            contador++;
+        }
+
+        function criarForma(tipo, cor, coords, ehMolde) {
+            let elemento = document.createElementNS("http://www.w3.org/2000/svg", tipo === "rect" ? "rect" : tipo === "oval" ? "ellipse" : "polygon");
+            
+            if (tipo === "rect") {
+                elemento.setAttribute("x", coords[0]);
+                elemento.setAttribute("y", coords[1]);
+                elemento.setAttribute("width", coords[2] - coords[0]);
+                elemento.setAttribute("height", coords[3] - coords[1]);
+            } else if (tipo === "oval") {
+                elemento.setAttribute("cx", (coords[0] + coords[2]) / 2);
+                elemento.setAttribute("cy", (coords[1] + coords[3]) / 2);
+                elemento.setAttribute("rx", (coords[2] - coords[0]) / 2);
+                elemento.setAttribute("ry", (coords[3] - coords[1]) / 2);
+            } else if (tipo === "poly") {
+                elemento.setAttribute("points", coords.join(","));
+            }
+
+            if (ehMolde) {
+                elemento.setAttribute("fill", "#f2f2f2");
+                elemento.setAttribute("stroke", "gray");
+                elemento.setAttribute("stroke-width", "3");
+                elemento.setAttribute("stroke-dasharray", "5,5");
+            } else {
+                elemento.setAttribute("fill", cor);
+                elemento.setAttribute("stroke", "black");
+                elemento.setAttribute("stroke-width", "2");
+                elemento.style.cursor = "grab";
+            }
+            return elemento;
+        }
+
+        function desenharCenario() {
+            // Linha divisória
+            let linha = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            linha.setAttribute("x1", "300"); linha.setAttribute("y1", "0");
+            linha.setAttribute("x2", "300"); linha.setAttribute("y2", "500");
+            linha.setAttribute("stroke", "gray"); linha.setAttribute("stroke-width", "2");
+            linha.setAttribute("stroke-dasharray", "4,4");
+            svg.appendChild(linha);
+
+            // Textos
+            let txt1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt1.setAttribute("x", "150"); txt1.setAttribute("y", "30");
+            txt1.setAttribute("fill", "gray"); txt1.setAttribute("font-size", "18");
+            txt1.setAttribute("font-weight", "bold"); txt1.setAttribute("text-anchor", "middle");
+            txt1.textContent = "Monte de Peças";
+            svg.appendChild(txt1);
+
+            let txt2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt2.setAttribute("x", "575"); txt2.setAttribute("y", "30");
+            txt2.setAttribute("fill", "gray"); txt2.setAttribute("font-size", "18");
+            txt2.setAttribute("font-weight", "bold"); txt2.setAttribute("text-anchor", "middle");
+            txt2.textContent = "Molde de Montagem";
+            svg.appendChild(txt2);
+        }
+
+        function carregarProjeto(nome) {
+            svg.innerHTML = ""; // Limpa a tela
+            pecasMoveis = [];
+            pecasEncaixadas = 0;
+            desenharCenario();
+
+            let pecasProjeto = projetos[nome];
+
+            // 1º Desenhar todos os moldes no lado direito
+            pecasProjeto.forEach(peca => {
+                let molde = criarForma(peca[0], peca[1], peca[2], true);
+                svg.appendChild(molde);
+            });
+
+            // 2º Desenhar todas as peças soltas no lado esquerdo
+            pecasProjeto.forEach(peca => {
+                let formaMovel = criarForma(peca[0], peca[1], peca[2], false);
+                
+                // Posição inicial baralhada à esquerda
+                let desvioX = -300 + (Math.random() * 60 - 30);
+                let desvioY = (Math.random() * 80 - 40);
+                
+                formaMovel.setAttribute("transform", `translate(${desvioX}, ${desvioY})`);
+                
+                // Guardar a peça na memória para o motor a conseguir arrastar
+                let objetoPeca = {
+                    elemento: formaMovel,
+                    dx: desvioX,
+                    dy: desvioY,
+                    fixa: false
+                };
+                
+                pecasMoveis.push(objetoPeca);
+                svg.appendChild(formaMovel);
+
+                // Ativar o toque / rato
+                formaMovel.addEventListener("mousedown", (e) => iniciarArrasto(e, objetoPeca));
+                formaMovel.addEventListener("touchstart", (e) => iniciarArrasto(e, objetoPeca), {passive: false});
+            });
+        }
+
+        // Mostrar mensagem inicial
+        let msgInicio = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        msgInicio.setAttribute("x", "425"); msgInicio.setAttribute("y", "240");
+        msgInicio.setAttribute("fill", "gray"); msgInicio.setAttribute("font-size", "22");
+        msgInicio.setAttribute("font-weight", "bold"); msgInicio.setAttribute("text-anchor", "middle");
+        msgInicio.textContent = "Escolhe um projeto em cima para construir!";
+        svg.appendChild(msgInicio);
+
+        // --- MOTOR DE ARRASTAR E LARGAR (MAGNÉTICO) ---
+        let pecaArrastada = null;
+        let offsetMouseX = 0;
+        let offsetMouseY = 0;
+
+        function obterPontoSVG(evt) {
+            let pt = svg.createSVGPoint();
+            // Suporte para dedo (touch) ou rato
+            if (evt.touches && evt.touches.length > 0) {
+                pt.x = evt.touches[0].clientX;
+                pt.y = evt.touches[0].clientY;
+            } else {
+                pt.x = evt.clientX;
+                pt.y = evt.clientY;
+            }
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        function iniciarArrasto(evt, peca) {
+            if (peca.fixa) return;
+            evt.preventDefault();
+            pecaArrastada = peca;
+            let pt = obterPontoSVG(evt);
+            offsetMouseX = pt.x - peca.dx;
+            offsetMouseY = pt.y - peca.dy;
+            
+            // Traz a peça para a frente
+            svg.appendChild(peca.elemento);
+            peca.elemento.style.cursor = "grabbing";
+        }
+
+        function arrastar(evt) {
+            if (pecaArrastada) {
+                evt.preventDefault();
+                let pt = obterPontoSVG(evt);
+                pecaArrastada.dx = pt.x - offsetMouseX;
+                pecaArrastada.dy = pt.y - offsetMouseY;
+                pecaArrastada.elemento.setAttribute("transform", `translate(${pecaArrastada.dx}, ${pecaArrastada.dy})`);
+            }
+        }
+
+        function largar(evt) {
+            if (pecaArrastada) {
+                // A magia do Íman: se o desvio (dx, dy) for quase zero, ele cola!
+                if (Math.abs(pecaArrastada.dx) < 40 && Math.abs(pecaArrastada.dy) < 40) {
+                    pecaArrastada.dx = 0;
+                    pecaArrastada.dy = 0;
+                    pecaArrastada.elemento.setAttribute("transform", "translate(0, 0)");
+                    pecaArrastada.elemento.style.cursor = "default";
+                    pecaArrastada.fixa = true;
+                    pecasEncaixadas++;
+                    verificarVitoria();
+                } else {
+                    pecaArrastada.elemento.style.cursor = "grab";
+                }
+                pecaArrastada = null;
+            }
+        }
+
+        function verificarVitoria() {
+            if (pecasEncaixadas === pecasMoveis.length) {
+                let vitoria = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                vitoria.setAttribute("x", "425"); vitoria.setAttribute("y", "240");
+                vitoria.setAttribute("text-anchor", "middle");
+                vitoria.setAttribute("class", "vitoria");
+                vitoria.innerHTML = "PARABÉNS!<tspan x='425' dy='50'>Montagem Perfeita!</tspan>";
+                svg.appendChild(vitoria);
+            }
+        }
+
+        // Eventos gerais na área de jogo (Dedo e Rato)
+        svg.addEventListener("mousemove", arrastar);
+        svg.addEventListener("mouseup", largar);
+        svg.addEventListener("mouseleave", largar);
+        
+        svg.addEventListener("touchmove", arrastar, {passive: false});
+        svg.addEventListener("touchend", largar);
+        svg.addEventListener("touchcancel", largar);
+
+    </script>
+</body>
+</html>

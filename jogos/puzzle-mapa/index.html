@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MALEGA - Adivinha o País pelo Mapa</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .container { background-color: #1e293b; border-radius: 12px; padding: 30px; width: 90%; max-width: 650px; box-shadow: 0 8px 16px rgba(0,0,0,0.4); text-align: center; border: 2px solid #0284c7; }
+        h1 { color: #38bdf8; margin-bottom: 10px; font-size: 1.8rem; }
+        p { color: #94a3b8; margin-bottom: 20px; font-size: 1rem; }
+        
+        .card-jogo { background-color: #0f172a; border: 2px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; height: 250px; transition: background-color 0.3s; }
+        
+        /* A imagem carrega o mapa real, pintado de branco com um brilho azul */
+        #mapaImagem { width: 100%; height: 100%; max-width: 200px; max-height: 200px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0px 0px 8px rgba(56, 189, 248, 0.8)); transition: opacity 0.3s; }
+
+        .opcoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-opcao { background-color: #334155; color: white; border: 1px solid #475569; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .btn-opcao:hover { background-color: #0284c7; border-color: #38bdf8; }
+
+        .info-painel { display: flex; justify-content: space-between; margin-top: 15px; font-size: 0.95rem; color: #94a3b8; border-top: 1px solid #334155; padding-top: 15px; }
+        .btn-voltar { margin-top: 20px; background-color: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-voltar:hover { background-color: #0369a1; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🗺️ MALEGA - Radar de Mapas</h1>
+        <p>Observe a silhueta rigorosa no radar e adivinhe a que país pertence:</p>
+
+        <div class="card-jogo" id="cardJogo">
+            <img id="mapaImagem" src="" alt="Silhueta do País">
+        </div>
+
+        <div id="opcoesContainer" class="opcoes-grid">
+            <!-- Os botões aparecem aqui automaticamente -->
+        </div>
+
+        <div class="info-painel">
+            <span id="pontuacaoTexto">Pontuação: 0</span>
+            <span id="perguntaTexto">Pergunta 1 de 15</span>
+        </div>
+
+        <button class="btn-voltar" onclick="location.reload()">🔄 Reiniciar Jogo</button>
+    </div>
+
+    <script>
+        // Lista completa e rigorosa com as siglas oficiais de cada país
+        const paisesMapas = [
+            { nome: "China", sigla: "cn" },
+            { nome: "Índia", sigla: "in" },
+            { nome: "Austrália", sigla: "au" },
+            { nome: "Cazaquistão", sigla: "kz" },
+            { nome: "México", sigla: "mx" },
+            { nome: "Brasil", sigla: "br" },
+            { nome: "Arábia Saudita", sigla: "sa" },
+            { nome: "Estados Unidos", sigla: "us" },
+            { nome: "Egito", sigla: "eg" },
+            { nome: "Noruega", sigla: "no" },
+            { nome: "Turquia", sigla: "tr" },
+            { nome: "Itália", sigla: "it" },
+            { nome: "Portugal", sigla: "pt" },
+            { nome: "Espanha", sigla: "es" },
+            { nome: "França", sigla: "fr" },
+            { nome: "Reino Unido", sigla: "gb" },
+            { nome: "Alemanha", sigla: "de" },
+            { nome: "Japão", sigla: "jp" },
+            { nome: "Rússia", sigla: "ru" },
+            { nome: "Canadá", sigla: "ca" },
+            { nome: "Argentina", sigla: "ar" },
+            { nome: "África do Sul", sigla: "za" },
+            { nome: "Angola", sigla: "ao" },
+            { nome: "Moçambique", sigla: "mz" },
+            { nome: "Cabo Verde", sigla: "cv" }
+        ];
+
+        let indiceAtual = 0;
+        let pontuacao = 0;
+        let listaMisturada = [];
+        const totalPerguntas = 15;
+
+        function iniciarJogo() {
+            listaMisturada = [...paisesMapas].sort(() => Math.random() - 0.5).slice(0, totalPerguntas);
+            indiceAtual = 0;
+            pontuacao = 0;
+            carregarPergunta();
+        }
+
+        function carregarPergunta() {
+            if (indiceAtual >= listaMisturada.length) {
+                document.getElementById('cardJogo').innerHTML = `<h2 style="color: #38bdf8; text-align: center;">🏆 Jogo Concluído!<br>Pontuação Final: ${pontuacao} / ${totalPerguntas}</h2>`;
+                document.getElementById('opcoesContainer').innerHTML = '';
+                document.getElementById('perguntaTexto').innerText = "Fim do Jogo";
+                return;
+            }
+
+            const atual = listaMisturada[indiceAtual];
+            
+            // Carrega o mapa real da internet com base na sigla do país
+            const imgMapa = document.getElementById('mapaImagem');
+            imgMapa.style.opacity = 0; // Esconde enquanto carrega
+            imgMapa.src = `https://cdn.jsdelivr.net/gh/djaiss/mapsicon@master/all/${atual.sigla}/vector.svg`;
+            
+            // Mostra a imagem de forma suave quando terminar de carregar
+            imgMapa.onload = () => { imgMapa.style.opacity = 1; };
+            
+            document.getElementById('pontuacaoTexto').innerText = `Pontuação: ${pontuacao}`;
+            document.getElementById('perguntaTexto').innerText = `Pergunta ${indiceAtual + 1} de ${totalPerguntas}`;
+
+            let opcoes = [atual.nome];
+            while (opcoes.length < 4) {
+                let aleatorio = paisesMapas[Math.floor(Math.random() * paisesMapas.length)].nome;
+                if (!opcoes.includes(aleatorio)) {
+                    opcoes.push(aleatorio);
+                }
+            }
+            opcoes.sort(() => Math.random() - 0.5);
+
+            const containerOpcoes = document.getElementById('opcoesContainer');
+            containerOpcoes.innerHTML = '';
+
+            opcoes.forEach(opcao => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opcao';
+                btn.innerText = opcao;
+                btn.onclick = () => verificarResposta(opcao, atual.nome);
+                containerOpcoes.appendChild(btn);
+            });
+        }
+
+        function verificarResposta(escolha, correta) {
+            const cardJogo = document.getElementById('cardJogo');
+            
+            if (escolha === correta) {
+                pontuacao++;
+                cardJogo.style.backgroundColor = '#166534'; // Fica verde escuro se acertar
+            } else {
+                cardJogo.style.backgroundColor = '#991b1b'; // Fica vermelho escuro se errar
+            }
+            
+            setTimeout(() => {
+                cardJogo.style.backgroundColor = '#0f172a'; // Volta à cor normal
+                indiceAtual++;
+                carregarPergunta();
+            }, 800); // Espera quase 1 segundo para mostrar a cor
+        }
+
+        iniciarJogo();
+    </script>
+</body>
+</html>

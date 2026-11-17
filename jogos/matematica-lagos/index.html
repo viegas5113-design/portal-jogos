@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>A Matemática do Avô - Lagos Navigator</title>
+    <style>
+        body {
+            background-color: #2c3e50;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            touch-action: none; 
+            user-select: none;
+        }
+        h1 { color: #f1c40f; margin-bottom: 5px; font-size: 34px; }
+        p { font-size: 16px; margin-top: 0; color: #ecf0f1; margin-bottom: 25px; }
+        
+        #painel-operacao {
+            font-size: 48px;
+            font-weight: bold;
+            background-color: #34495e;
+            padding: 15px 40px;
+            border-radius: 15px;
+            display: inline-block;
+            border: 4px solid #f1c40f;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        #jogo-container {
+            position: relative;
+            width: 950px; 
+            height: 480px;
+            margin: 0 auto;
+            background-color: #1abc9c; /* Água do mar viva */
+            border: 4px solid white;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+
+        /* Zona onde os peixes nadam soltos */
+        #mar-dos-peixes {
+            position: absolute;
+            top: 0; left: 0;
+            width: 600px; height: 480px;
+            border-right: 3px dashed rgba(255,255,255,0.5);
+        }
+
+        /* O Balde onde se largam as respostas */
+        #balde-pesca {
+            position: absolute;
+            top: 115px; right: 60px;
+            width: 220px; height: 250px;
+            background-color: #e67e22;
+            border: 5px solid #d35400;
+            border-radius: 10px 10px 100px 100px; /* Formato de balde */
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .etiqueta-balde {
+            position: absolute; top: -35px; width: 100%; text-align: center;
+            font-weight: bold; color: white; font-size: 20px;
+        }
+
+        /* Os Peixes com as respostas */
+        .peixe {
+            position: absolute;
+            width: 100px; height: 60px;
+            background-color: #e67e22;
+            border-radius: 50px; /* Corpo do peixe */
+            cursor: grab;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+            box-shadow: 2px 4px 6px rgba(0,0,0,0.2);
+        }
+        /* Cauda do peixe feita com um triângulo virtual */
+        .peixe::before {
+            content: "";
+            position: absolute;
+            left: -20px; top: 15px;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-right: 25px solid #e67e22;
+        }
+        .peixe:active { cursor: grabbing; }
+
+        /* Cores diferentes para os peixes ficarem bonitos */
+        .p-cor0 { background-color: #e67e22; } .p-cor0::before { border-right-color: #e67e22; }
+        .p-cor1 { background-color: #9b59b6; } .p-cor1::before { border-right-color: #9b59b6; }
+        .p-cor2 { background-color: #3498db; } .p-cor2::before { border-right-color: #3498db; }
+        .p-cor3 { background-color: #f1c40f; color: #2c3e50; } .p-cor3::before { border-right-color: #f1c40f; }
+
+        #mensagem-festa {
+            position: absolute;
+            top: 160px; left: 100px;
+            background-color: #2e7d32;
+            padding: 20px 40px; border-radius: 15px; border: 4px solid white;
+            font-size: 38px; font-weight: bold; color: white;
+            display: none; z-index: 1000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>A Matemática Interativa do Avô 🎣</h1>
+    <p>Pesca o peixe com a resposta certa e arrasta-o para dentro do balde!</p>
+
+    <!-- O Painel da Conta -->
+    <div id="painel-operacao">
+        <span id="conta-texto">0 + 0 = ?</span>
+    </div>
+
+    <!-- O Ecrã do Jogo -->
+    <div id="jogo-container">
+        <div id="mar-dos-peixes"></div>
+        
+        <div id="balde-pesca">
+            🪣
+            <div class="etiqueta-balde">Larga Aqui</div>
+        </div>
+        
+        <div id="mensagem-festa">Muito Bem! Certo! 🌟</div>
+    </div>
+
+    <script>
+        let respostaCorreta = 0;
+        let peixesAtivos = [];
+        let jogoContainer = document.getElementById('jogo-container');
+        let mar = document.getElementById('mar-dos-peixes');
+        let balde = document.getElementById('balde-pesca');
+        let contaTexto = document.getElementById('conta-texto');
+        let msgFesta = document.getElementById('mensagem-festa');
+
+        // Gerador de Contas Automáticas (Soma e Subtração simples)
+        function novaConta() {
+            let num1 = Math.floor(Math.random() * 7) + 3; // Número entre 3 e 9
+            let num2 = Math.floor(Math.random() * num1); // Garante que a subtração não dá negativa
+            let operacao = Math.random() > 0.5 ? '+' : '-';
+            
+            if (operacao === '+') {
+                respostaCorreta = num1 + num2;
+                contaTexto.innerText = `${num1} + ${num2} = ?`;
+            } else {
+                respostaCorreta = num1 - num2;
+                contaTexto.innerText = `${num1} - ${num2} = ?`;
+            }
+
+            gerarCardume();
+        }
+
+        function gerarCardume() {
+            // Apaga peixes antigos
+            const antigos = document.querySelectorAll('.peixe');
+            antigos.forEach(p => p.remove());
+            peixesAtivos = [];
+
+            // Criar lista de 4 respostas (1 certa e 3 erradas)
+            let respostas = [respostaCorreta];
+            while(respostas.length < 4) {
+                let errada = respostaCorreta + (Math.floor(Math.random() * 7) - 3);
+                if (errada >= 0 && !respostas.includes(errada)) {
+                    respostas.push(errada);
+                }
+            }
+            // Baralhar as respostas para a certa não estar sempre no mesmo sítio
+            respostas.sort(() => Math.random() - 0.5);
+
+            // Desenhar os peixes no ecrã
+            respostas.forEach((valor, index) => {
+                let peixe = document.createElement('div');
+                peixe.className = `peixe p-cor${index}`;
+                peixe.innerText = valor;
+                peixe.valorMatematico = valor;
+
+                // Posições espalhadas na área do mar
+                peixe.atualX = 60 + (index * 120);
+                peixe.atualY = 100 + Math.random() * 250;
+                
+                // Variável para criar um balanço suave na água (Animação)
+                peixe.anguloFlutuar = Math.random() * 10;
+                peixe.velocidadeFlutuar = 0.02 + Math.random() * 0.03;
+
+                peixe.style.left = peixe.atualX + 'px';
+                peixe.style.top = peixe.atualY + 'px';
+
+                mar.appendChild(peixe);
+                peixesAtivos.push(peixe);
+            });
+        }
+
+        // --- MOTOR DE ANIMAÇÃO DA ÁGUA (Faz os peixes flutuarem sozinhos) ---
+        function animarMar() {
+            peixesAtivos.forEach(peixe => {
+                if (peixe !== pecaArrastada) { // Só flutua se não estiver a ser agarrado
+                    peixe.anguloFlutuar += peGridV(peixe);
+                    let desvioY = Math.sin(peixe.anguloFlutuar) * 0.5;
+                    peixe.atualY += desvioY;
+                    
+                    // Limites para não fugirem do ecrã
+                    if(peixe.atualY < 40) peixe.atualY = 40;
+                    if(peixe.atualY > 400) peixe.atualY = 400;
+                    
+                    peixe.style.top = peGridP(peixe.atualY);
+                }
+            });
+            requestAnimationFrame(animarMar);
+        }
+
+        function peGridV(p) { return p.velocidadeFlutuar; }
+        function peGridP(y) { return y + 'px'; }
+
+        // --- MOTOR MAGNÉTICO (ARRACAR E LARGAR NO BALDE) ---
+        let pecaArrastada = null;
+        let deslizeX = 0, deslizeY = 0;
+
+        document.addEventListener('pointerdown', function(e) {
+            if (e.target.classList.contains('peixe')) {
+                pecaArrastada = e.target;
+                pecaArrastada.style.zIndex = 100;
+                let caixa = pecaArrastada.getBoundingClientRect();
+                deslizeX = e.clientX - caixa.left;
+                deslizeY = e.clientY - caixa.top;
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('pointermove', function(e) {
+            if (pecaArrastada) {
+                let caixaJogo = jogoContainer.getBoundingClientRect();
+                let novoX = (e.clientX - caixaJogo.left) - deslizeX;
+                let novoY = (e.clientY - caixaJogo.top) - deslizeY;
+                
+                // Limites para o peixe não sair da caixa grande do jogo
+                if(novoX < 20) novoX = 20;
+                if(novoX > 850) novoX = 850;
+                if(novoY < 10) novoY = 10;
+                if(novoY > 420) novoY = 420;
+
+                pecaArrastada.style.left = novoX + 'px';
+                pecaArrastada.style.top = novoY + 'px';
+                pecaArrastada.atualX = novoX;
+                pecaArrastada.atualY = novoY;
+            }
+        });
+
+        document.addEventListener('pointerup', function(e) {
+            if (pecaArrastada) {
+                // Posição física do balde no ecrã (começa nos 660px de largura)
+                let posBaldeX = 660;
+                let posBaldeY = 115;
+
+                let distanciaX = Math.abs(pecaArrastada.atualX - posBaldeX);
+                let distanciaY = Math.abs(pecaArrastada.atualY - posBaldeY);
+
+                // O Íman: Se largar o peixe perto ou dentro da boca do balde
+                if (distanciaX < 120 && pecaArrastada.atualY > 80 && pecaArrastada.atualY < 350) {
+                    
+                    // Verifica se a resposta está certa
+                    if (pecaArrastada.valorMatematico === respostaCorreta) {
+                        // CLIC! Resposta Certa! O balde engole o peixe
+                        pecaArrastada.remove();
+                        
+                        // Festa Visual
+                        jogoContainer.style.backgroundColor = "#2ecc71"; // Fundo fica verde
+                        balde.style.transform = "scale(1.1)";
+                        msgFesta.style.display = 'block';
+
+                        setTimeout(() => {
+                            jogoContainer.style.backgroundColor = "#1abc9c"; // Volta ao azul
+                            balde.style.transform = "scale(1)";
+                            msgFesta.style.display = 'none';
+                            novaConta(); // Avança para o próximo desafio!
+                        }, 2000); // 2 segundos para ver a vitória e festejar
+
+                    } else {
+                        // Resposta Errada: O balde rejeita e o peixe volta para o mar
+                        jogoContainer.style.backgroundColor = "#e74c3c"; // Pisca vermelho de aviso
+                        setTimeout(() => jogoContainer.style.backgroundColor = "#1abc9c", 200);
+                        
+                        pecaArrastada.atualX = 60 + Math.random() * 400;
+                        pecaArrastada.atualY = 100 + Math.random() * 250;
+                        pecaArrastada.style.left = pecaArrastada.atualX + 'px';
+                        pecaArrastada.style.top = pecaArrastada.atualY + 'px';
+                        pecaArrastada.style.zIndex = 10;
+                    }
+                } else {
+                    // Se largou a meio do mar, ele fica onde foi deixado
+                    pecaArrastada.style.zIndex = 10;
+                }
+                pecaArrastada = null;
+            }
+        });
+
+        // Arrancar o motor do jogo
+        novaConta();
+        animarMar();
+    </script>
+</body>
+</html>

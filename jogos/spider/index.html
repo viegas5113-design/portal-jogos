@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>Spider do Capitão</title>
+    <style>
+        body {
+            background-color: #27ae60; 
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        h1 { margin-top: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+        
+        /* Menu Inicial */
+        #menu-dificuldade { margin-top: 50px; }
+        .btn-nivel { 
+            padding: 20px 30px; font-size: 20px; font-weight: bold; margin: 10px;
+            cursor: pointer; background: white; color: #2c3e50; border: 4px solid #2c3e50; border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+        .btn-nivel:hover { background: #f1c40f; }
+        
+        /* Área de Jogo */
+        #area-jogo { 
+            width: 1050px; height: 750px; margin: 20px auto; 
+            display: none; position: relative; 
+        }
+        
+        .painel-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 20px; }
+        
+        .btn-acao { 
+            padding: 10px 20px; font-size: 16px; font-weight: bold; background: #f1c40f; color: #2c3e50;
+            border: 2px solid white; border-radius: 8px; cursor: pointer;
+        }
+        .btn-acao:hover { background: #f39c12; }
+
+        /* O Baralho para dar mais cartas */
+        #baralho-spider {
+            width: 90px; height: 120px;
+            background: repeating-linear-gradient(45deg, #2980b9, #2980b9 10px, #3498db 10px, #3498db 20px);
+            border: 2px solid white; border-radius: 6px; cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 18px; color: white; text-align: center;
+        }
+
+        /* As 10 Colunas */
+        .linha-colunas { display: flex; gap: 15px; }
+        .coluna { width: 90px; height: 120px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 6px; position: relative; }
+
+        /* As Cartas */
+        .carta { 
+            width: 90px; height: 120px; background: white; border: 1px solid #ccc; border-radius: 6px; 
+            position: absolute; box-shadow: 2px 2px 5px rgba(0,0,0,0.4); display: flex; flex-direction: column; 
+            justify-content: space-between; padding: 5px; box-sizing: border-box; font-size: 20px; font-weight: bold; cursor: pointer;
+        }
+        .carta-costas { 
+            background: repeating-linear-gradient(45deg, #2980b9, #2980b9 10px, #3498db 10px, #3498db 20px); 
+            border: 2px solid white; cursor: default;
+        }
+        
+        .vermelho { color: #e74c3c; } .preto { color: #2c3e50; }
+        
+        /* Brilho da Seleção */
+        .selecionada { box-shadow: 0 0 15px 5px #f1c40f; border: 2px solid #f1c40f; z-index: 100 !important; }
+
+        .naipe-centro { font-size: 35px; text-align: center; margin-top: 10px; }
+        .carta-topo { align-self: flex-start; }
+        .carta-fundo { align-self: flex-end; transform: rotate(180deg); }
+
+    </style>
+</head>
+<body>
+
+    <h1>A Missão Spider 🕷️</h1>
+
+    <div id="menu-dificuldade">
+        <h2>Escolha a dificuldade da teia:</h2>
+        <button class="btn-nivel" onclick="iniciarSpider(1)">1 Naipe (Fácil)</button>
+        <button class="btn-nivel" onclick="iniciarSpider(2)">2 Naipes (Médio)</button>
+        <button class="btn-nivel" onclick="iniciarSpider(4)">4 Naipes (Difícil)</button>
+    </div>
+
+    <div id="area-jogo">
+        <div class="painel-topo">
+            <div id="baralho-spider" onclick="darCartas()">Dar<br>Cartas</div>
+            <button class="btn-acao" onclick="varrerMesaSpider()">✨ Varrer Sequências Prontas</button>
+            <button class="btn-acao" onclick="voltarAoMenu()">⬅️ Mudar Dificuldade</button>
+        </div>
+
+        <div class="linha-colunas">
+            <div class="coluna" id="col0" onclick="cliqueColuna(0)"></div>
+            <div class="coluna" id="col1" onclick="cliqueColuna(1)"></div>
+            <div class="coluna" id="col2" onclick="cliqueColuna(2)"></div>
+            <div class="coluna" id="col3" onclick="cliqueColuna(3)"></div>
+            <div class="coluna" id="col4" onclick="cliqueColuna(4)"></div>
+            <div class="coluna" id="col5" onclick="cliqueColuna(5)"></div>
+            <div class="coluna" id="col6" onclick="cliqueColuna(6)"></div>
+            <div class="coluna" id="col7" onclick="cliqueColuna(7)"></div>
+            <div class="coluna" id="col8" onclick="cliqueColuna(8)"></div>
+            <div class="coluna" id="col9" onclick="cliqueColuna(9)"></div>
+        </div>
+    </div>
+
+    <script>
+        const nomeValores = {1:'A', 11:'J', 12:'Q', 13:'K'};
+        const corNaipe = {'♠':'preto', '♣':'preto', '♥':'vermelho', '♦':'vermelho'};
+        
+        let baralho = [];
+        let pilhas = [[], [], [], [], [], [], [], [], [], []];
+        let selecao = null;
+
+        function voltarAoMenu() {
+            document.getElementById('area-jogo').style.display = 'none';
+            document.getElementById('menu-dificuldade').style.display = 'block';
+        }
+
+        function iniciarSpider(numNaipes) {
+            document.getElementById('menu-dificuldade').style.display = 'none';
+            document.getElementById('area-jogo').style.display = 'block';
+            
+            baralho = [];
+            pilhas = [[], [], [], [], [], [], [], [], [], []];
+            selecao = null;
+
+            // Construir os 2 Baralhos (104 cartas) dependendo da dificuldade
+            let naipesParaUsar = [];
+            if (numNaipes === 1) naipesParaUsar = ['♠', '♠', '♠', '♠', '♠', '♠', '♠', '♠']; // 8 conjuntos iguais
+            if (numNaipes === 2) naipesParaUsar = ['♠', '♠', '♠', '♠', '♥', '♥', '♥', '♥']; // 4 espadas, 4 copas
+            if (numNaipes === 4) naipesParaUsar = ['♠', '♠', '♥', '♥', '♣', '♣', '♦', '♦']; // 2 de cada
+
+            for (let n of naipesParaUsar) {
+                for (let v = 1; v <= 13; v++) {
+                    baralho.push({ valor: v, naipe: n, cor: corNaipe[n], virada: false });
+                }
+            }
+
+            // Baralhar rigorosamente a máquina
+            for (let i = baralho.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [baralho[i], baralho[j]] = [baralho[j], baralho[i]];
+            }
+
+            // Distribuir as primeiras 54 cartas pelas 10 colunas
+            for (let i = 0; i < 54; i++) {
+                let coluna = i % 10;
+                let carta = baralho.pop();
+                // As últimas cartas dadas ficam viradas para cima
+                if (i >= 44) carta.virada = true;
+                pilhas[coluna].push(carta);
+            }
+
+            desenharMesa();
+        }
+
+        function darCartas() {
+            selecao = null; // Limpar seleções
+            // Regra do Spider: Só pode dar cartas se não houver colunas vazias
+            let temVazia = false;
+            for (let i = 0; i < 10; i++) {
+                if (pilhas[i].length === 0) temVazia = true;
+            }
+            if (temVazia) {
+                alert("Atenção, Capitão: Preencha todas as colunas vazias antes de dar mais cartas.");
+                return;
+            }
+
+            if (baralho.length >= 10) {
+                for (let i = 0; i < 10; i++) {
+                    let carta = baralho.pop();
+                    carta.virada = true;
+                    pilhas[i].push(carta);
+                }
+                desenharMesa();
+            } else {
+                alert("Não há mais cartas no baralho!");
+            }
+        }
+
+        function desenharMesa() {
+            // Desenhar as 10 colunas
+            for (let i = 0; i < 10; i++) {
+                let divColuna = document.getElementById('col' + i);
+                divColuna.innerHTML = '';
+                let topoAcumulado = 0;
+
+                pilhas[i].forEach((carta, indexCarta) => {
+                    let elem = document.createElement('div');
+                    
+                    if (!carta.virada) {
+                        elem.className = 'carta carta-costas';
+                    } else {
+                        elem.className = `carta ${carta.cor}`;
+                        let strValor = nomeValores[carta.valor] || carta.valor;
+                        elem.innerHTML = `
+                            <div class="carta-topo">${strValor}${carta.naipe}</div>
+                            <div class="naipe-centro">${carta.naipe}</div>
+                            <div class="carta-fundo">${strValor}${carta.naipe}</div>
+                        `;
+                    }
+
+                    // Efeito escada
+                    elem.style.top = topoAcumulado + 'px';
+                    topoAcumulado += carta.virada ? 30 : 15; 
+                    
+                    // Iluminar cartas selecionadas a amarelo
+                    if (selecao && selecao.coluna === i && indexCarta >= selecao.indiceCarta) {
+                        elem.classList.add('selecionada');
+                    }
+
+                    // Ordem de clique
+                    elem.onclick = (e) => { e.stopPropagation(); cliqueColuna(i, indexCarta); };
+                    divColuna.appendChild(elem);
+                });
+            }
+            
+            // Atualizar aspeto do baralho
+            let divBaralho = document.getElementById('baralho-spider');
+            if (baralho.length === 0) divBaralho.style.visibility = 'hidden';
+            else divBaralho.style.visibility = 'visible';
+        }
+
+        function cliqueColuna(colunaClicada, indiceCartaClicada) {
+            if (selecao) {
+                // 2º CLIQUE: O destino
+                let cartasAMover = pilhas[selecao.coluna].slice(selecao.indiceCarta);
+                let cartaBase = cartasAMover[0];
+                
+                let cartaTopoDestino = pilhas[colunaClicada].length > 0 ? pilhas[colunaClicada][pilhas[colunaClicada].length - 1] : null;
+                
+                let movimentoValido = false;
+                // Pode mover para coluna vazia
+                if (!cartaTopoDestino) {
+                    movimentoValido = true;
+                } 
+                // Ou se for exatamente um número abaixo da carta de destino (naipe não interessa para mover)
+                else if (cartaBase.valor === cartaTopoDestino.valor - 1) {
+                    movimentoValido = true;
+                }
+
+                if (movimentoValido && selecao.coluna !== colunaClicada) {
+                    // Executar o corte
+                    let pacoteCortado = pilhas[selecao.coluna].splice(selecao.indiceCarta, cartasAMover.length);
+                    pacoteCortado.forEach(c => pilhas[colunaClicada].push(c));
+                    
+                    // Virar a carta que ficou a descoberto na coluna de origem
+                    if (pilhas[selecao.coluna].length > 0) {
+                        pilhas[selecao.coluna][pilhas[selecao.coluna].length - 1].virada = true;
+                    }
+                }
+                selecao = null;
+                desenharMesa();
+
+            } else {
+                // 1º CLIQUE: A escolha
+                if (indiceCartaClicada !== undefined) {
+                    let carta = pilhas[colunaClicada][indiceCartaClicada];
+                    if (carta.virada) {
+                        // Regra rigorosa do Spider: Só se pode arrastar várias cartas se forem uma escada perfeita do mesmo naipe
+                        let validoParaArrastar = true;
+                        let naipeSeq = carta.naipe;
+                        let valorSeq = carta.valor;
+                        
+                        for (let k = indiceCartaClicada + 1; k < pilhas[colunaClicada].length; k++) {
+                            let proxCarta = pilhas[colunaClicada][k];
+                            if (proxCarta.naipe !== naipeSeq || proxCarta.valor !== valorSeq - 1) {
+                                validoParaArrastar = false; break;
+                            }
+                            valorSeq = proxCarta.valor;
+                        }
+
+                        if (validoParaArrastar) {
+                            selecao = { coluna: colunaClicada, indiceCarta: indiceCartaClicada };
+                            desenharMesa();
+                        }
+                    }
+                }
+            }
+        }
+
+        // O nosso Automático: O botão mágico do Capitão
+        function varrerMesaSpider() {
+            selecao = null;
+            let fezLimpeza = false;
+
+            for (let i = 0; i < 10; i++) {
+                let p = pilhas[i];
+                if (p.length >= 13) {
+                    // Verificar as últimas 13 cartas a ver se formam uma escada perfeita de Rei (13) a Ás (1)
+                    let startIndex = p.length - 13;
+                    let seqValida = true;
+                    let naipeAlvo = p[startIndex].naipe;
+                    
+                    for (let j = 0; j < 13; j++) {
+                        let cartaVerificar = p[startIndex + j];
+                        if (!cartaVerificar.virada || cartaVerificar.naipe !== naipeAlvo || cartaVerificar.valor !== (13 - j)) {
+                            seqValida = false; break;
+                        }
+                    }
+
+                    if (seqValida) {
+                        // Sucesso! Remover as 13 cartas
+                        p.splice(startIndex, 13);
+                        // Virar a que sobrou
+                        if (p.length > 0) p[p.length - 1].virada = true;
+                        fezLimpeza = true;
+                    }
+                }
+            }
+
+            desenharMesa();
+            if (fezLimpeza) {
+                alert("Fantástico! Uma sequência completa foi arrumada pelo sistema.");
+            } else {
+                alert("Ainda não tem nenhuma sequência completa do Rei (K) ao Ás (A) do mesmo naipe pronta para varrer.");
+            }
+        }
+    </script>
+</body>
+</html>

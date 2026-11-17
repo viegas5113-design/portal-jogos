@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-jogos-v4';
+const CACHE_NAME = 'portal-jogos-v5';
 
 const APP_SHELL = [
   './',
@@ -13,7 +13,35 @@ const APP_SHELL = [
   './jogos/jogo-3/index.html',
   './jogos/jogo-4/index.html',
   './jogos/jogo-5/index.html',
-  './jogos/jogo-6/index.html'
+  './jogos/jogo-6/index.html',
+  './jogos/puzzle-portugal/index.html',
+  './jogos/puzzle-portugal/pesca_lula.html',
+  './jogos/puzzle-portugal/css/styles.css',
+  './jogos/puzzle-portugal/css/lula.css',
+  './jogos/puzzle-portugal/js/audio.js',
+  './jogos/puzzle-portugal/js/data.js',
+  './jogos/puzzle-portugal/js/game.js',
+  './jogos/puzzle-portugal/js/lula_game.js',
+  './jogos/puzzle-portugal/js/map.js',
+  './jogos/puzzle-magnetico/index.html',
+  './jogos/avo-magnetico/index.html',
+  './jogos/aventura-lagos/index.html',
+  './jogos/matematica-lagos/index.html',
+  './jogos/pesca-malega/index.html',
+  './jogos/pesca-embarcada/index.html',
+  './jogos/aorus-corrida/index.html',
+  './jogos/cyber-runner/index.html',
+  './jogos/freecell/index.html',
+  './jogos/paciencia/index.html',
+  './jogos/spider/index.html',
+  './jogos/nao-te-irrites/index.html',
+  './jogos/puzzle-mapa/index.html',
+  './jogos/puzzle-paises/index.html',
+  './jogos/puzzle-capitais/index.html',
+  './jogos/pesca-lula-animada/index.html',
+  './jogos/aventura-pirata/index.html',
+  './jogos/palavras-cruzadas/index.html',
+  './jogos/plataformas-2d/index.html'
 ];
 
 self.addEventListener('install', (event) => {

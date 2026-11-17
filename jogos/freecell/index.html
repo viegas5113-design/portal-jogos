@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>Freecell do Capitão</title>
+    <style>
+        body { background-color: #27ae60; font-family: Arial, sans-serif; text-align: center; color: white; margin: 0; padding: 20px; user-select: none; }
+        h1 { margin-top: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+        
+        .painel-controlo { margin-bottom: 20px; }
+        .btn-acao { padding: 10px 20px; font-size: 16px; font-weight: bold; background: #f1c40f; color: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: pointer; margin: 0 10px; }
+        .btn-acao:hover { background: #f39c12; }
+
+        #mesa-jogo { width: 1050px; margin: 0 auto; position: relative; }
+
+        /* Linha de cima: 4 Células Livres (esquerda) e 4 Ases (direita) */
+        .linha-topo { display: flex; justify-content: space-between; margin-bottom: 30px; height: 140px; padding: 0 20px; }
+        .grupo-celulas { display: flex; gap: 15px; }
+        
+        .espaco { width: 90px; height: 120px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 6px; position: relative; }
+        
+        /* Linha de baixo: 8 Colunas */
+        .linha-baixo { display: flex; justify-content: center; gap: 15px; height: 500px; }
+        .coluna { width: 90px; position: relative; }
+
+        /* Cartas */
+        .carta { width: 90px; height: 120px; background: white; border: 1px solid #ccc; border-radius: 6px; position: absolute; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: space-between; padding: 5px; box-sizing: border-box; font-size: 20px; font-weight: bold; cursor: pointer; }
+        .vermelho { color: #e74c3c; } .preto { color: #2c3e50; }
+        .selecionada { box-shadow: 0 0 15px 5px #f1c40f; border: 2px solid #f1c40f; z-index: 100 !important; transform: translateY(-5px); }
+        
+        .naipe-centro { font-size: 35px; text-align: center; margin-top: 10px; }
+        .carta-topo { align-self: flex-start; }
+        .carta-fundo { align-self: flex-end; transform: rotate(180deg); }
+
+        #mensagem-vitoria { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #f1c40f; color: #2c3e50; padding: 40px; border-radius: 20px; font-size: 40px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 1000; text-align: center; border: 5px solid white; }
+    </style>
+</head>
+<body>
+
+    <h1>A Missão Freecell 🃏</h1>
+    
+    <div class="painel-controlo">
+        <button class="btn-acao" onclick="iniciarJogo()">Dar Novas Cartas</button>
+        <button class="btn-acao" onclick="varrerMesa()">✨ Varrer a Mesa</button>
+        <button class="btn-acao" onclick="location.href='Menu_Jogos.html'">⬅️ Voltar ao Menu</button>
+    </div>
+
+    <div id="mesa-jogo">
+        <div class="linha-topo">
+            <!-- 4 Células Livres para guardar cartas -->
+            <div class="grupo-celulas">
+                <div id="celula0" class="espaco" onclick="cliqueCelula(0)"></div>
+                <div id="celula1" class="espaco" onclick="cliqueCelula(1)"></div>
+                <div id="celula2" class="espaco" onclick="cliqueCelula(2)"></div>
+                <div id="celula3" class="espaco" onclick="cliqueCelula(3)"></div>
+            </div>
+            <!-- 4 Bases para os Ases -->
+            <div class="grupo-celulas">
+                <div id="base0" class="espaco" onclick="cliqueBase(0)"></div>
+                <div id="base1" class="espaco" onclick="cliqueBase(1)"></div>
+                <div id="base2" class="espaco" onclick="cliqueBase(2)"></div>
+                <div id="base3" class="espaco" onclick="cliqueBase(3)"></div>
+            </div>
+        </div>
+
+        <!-- 8 Colunas do Freecell -->
+        <div class="linha-baixo">
+            <div id="col0" class="coluna" onclick="cliqueColuna(0)"></div>
+            <div id="col1" class="coluna" onclick="cliqueColuna(1)"></div>
+            <div id="col2" class="coluna" onclick="cliqueColuna(2)"></div>
+            <div id="col3" class="coluna" onclick="cliqueColuna(3)"></div>
+            <div id="col4" class="coluna" onclick="cliqueColuna(4)"></div>
+            <div id="col5" class="coluna" onclick="cliqueColuna(5)"></div>
+            <div id="col6" class="coluna" onclick="cliqueColuna(6)"></div>
+            <div id="col7" class="coluna" onclick="cliqueColuna(7)"></div>
+        </div>
+    </div>
+
+    <div id="mensagem-vitoria">PARABÉNS, CAPITÃO!<br>O Jogo está Feito!</div>
+
+    <script>
+        const naipes = ['♠', '♥', '♣', '♦'];
+        const corNaipe = {'♠':'preto', '♣':'preto', '♥':'vermelho', '♦':'vermelho'};
+        const nomeValores = {1:'A', 11:'J', 12:'Q', 13:'K'};
+
+        let celulas = [null, null, null, null];
+        let bases = [[], [], [], []];
+        let colunas = [[], [], [], [], [], [], [], []];
+        let selecao = null;
+
+        function iniciarJogo() {
+            document.getElementById('mensagem-vitoria').style.display = 'none';
+            celulas = [null, null, null, null];
+            bases = [[], [], [], []];
+            colunas = [[], [], [], [], [], [], [], []];
+            selecao = null;
+
+            let baralho = [];
+            for (let n of naipes) {
+                for (let v = 1; v <= 13; v++) {
+                    baralho.push({ valor: v, naipe: n, cor: corNaipe[n] });
+                }
+            }
+
+            for (let i = baralho.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [baralho[i], baralho[j]] = [baralho[j], baralho[i]];
+            }
+
+            // Distribuir 52 cartas por 8 colunas (todas viradas para cima)
+            let col = 0;
+            while(baralho.length > 0) {
+                colunas[col].push(baralho.pop());
+                col = (col + 1) % 8;
+            }
+            desenharMesa();
+        }
+
+        function criarHTMLCarta(cartaObj, infoOrigem) {
+            let div = document.createElement('div');
+            div.className = `carta ${cartaObj.cor}`;
+            let strValor = nomeValores[cartaObj.valor] || cartaObj.valor;
+            div.innerHTML = `
+                <div class="carta-topo">${strValor}${cartaObj.naipe}</div>
+                <div class="naipe-centro">${cartaObj.naipe}</div>
+                <div class="carta-fundo">${strValor}${cartaObj.naipe}</div>
+            `;
+            
+            // Ativar o brilho se estiver selecionada
+            if (selecao && selecao.tipo === infoOrigem.tipo && selecao.indice === infoOrigem.indice) {
+                div.classList.add('selecionada');
+            }
+            return div;
+        }
+
+        function desenharMesa() {
+            // Desenhar Células
+            for (let i = 0; i < 4; i++) {
+                let div = document.getElementById('celula' + i);
+                div.innerHTML = '';
+                if (celulas[i]) {
+                    let c = criarHTMLCarta(celulas[i], {tipo: 'celula', indice: i});
+                    div.appendChild(c);
+                }
+            }
+            // Desenhar Bases
+            for (let i = 0; i < 4; i++) {
+                let div = document.getElementById('base' + i);
+                div.innerHTML = '';
+                if (bases[i].length > 0) {
+                    let c = criarHTMLCarta(bases[i][bases[i].length - 1], {tipo: 'base', indice: i});
+                    div.appendChild(c);
+                }
+            }
+            // Desenhar Colunas
+            for (let i = 0; i < 8; i++) {
+                let div = document.getElementById('col' + i);
+                div.innerHTML = '';
+                colunas[i].forEach((carta, idx) => {
+                    let c = criarHTMLCarta(carta, {tipo: 'coluna', indice: i});
+                    c.style.top = (idx * 30) + 'px'; 
+                    // O clique é no próprio elemento da carta
+                    c.onclick = (e) => { e.stopPropagation(); tratarClique('coluna', i, idx); };
+                    div.appendChild(c);
+                });
+            }
+            verificarVitoria();
+        }
+
+        // Funções de clique acionadas pelas caixas vazias
+        function cliqueCelula(idx) { tratarClique('celula', idx, null); }
+        function cliqueBase(idx) { tratarClique('base', idx, null); }
+        function cliqueColuna(idx) { tratarClique('coluna', idx, colunas[idx].length - 1); } // Clicar na coluna vazia
+
+        function tratarClique(tipoDestino, indiceDestino, indiceCarta) {
+            if (selecao) {
+                // 2º CLIQUE: Tentar mover a carta selecionada para o destino
+                let cartaMover = obterCartaSelecionada();
+                if (!cartaMover) { selecao = null; return; }
+
+                let movimentoValido = false;
+
+                // Tentar mover para Célula Livre
+                if (tipoDestino === 'celula') {
+                    if (!celulas[indiceDestino]) movimentoValido = true;
+                }
+                // Tentar mover para Base (Ases)
+                else if (tipoDestino === 'base') {
+                    let topoBase = bases[indiceDestino].length > 0 ? bases[indiceDestino][bases[indiceDestino].length - 1] : null;
+                    if (!topoBase && cartaMover.valor === 1) movimentoValido = true;
+                    else if (topoBase && topoBase.naipe === cartaMover.naipe && cartaMover.valor === topoBase.valor + 1) movimentoValido = true;
+                }
+                // Tentar mover para Coluna
+                else if (tipoDestino === 'coluna') {
+                    let topoCol = colunas[indiceDestino].length > 0 ? colunas[indiceDestino][colunas[indiceDestino].length - 1] : null;
+                    if (!topoCol) movimentoValido = true; // Coluna vazia aceita qualquer carta no Freecell
+                    else if (topoCol.cor !== cartaMover.cor && cartaMover.valor === topoCol.valor - 1) movimentoValido = true;
+                }
+
+                if (movimentoValido && !(selecao.tipo === tipoDestino && selecao.indice === indiceDestino)) {
+                    executarMovimento(tipoDestino, indiceDestino);
+                }
+                selecao = null;
+                desenharMesa();
+
+            } else {
+                // 1º CLIQUE: Selecionar uma carta
+                let podeSelecionar = false;
+                if (tipoDestino === 'celula' && celulas[indiceDestino]) podeSelecionar = true;
+                if (tipoDestino === 'base' && bases[indiceDestino].length > 0) podeSelecionar = true;
+                if (tipoDestino === 'coluna' && colunas[indiceDestino].length > 0) {
+                    // No Freecell, de forma rigorosa, seleciona-se apenas a carta do fundo para mover 1 a 1
+                    if (indiceCarta === colunas[indiceDestino].length - 1) podeSelecionar = true;
+                }
+
+                if (podeSelecionar) {
+                    selecao = { tipo: tipoDestino, indice: indiceDestino };
+                    desenharMesa();
+                }
+            }
+        }
+
+        function obterCartaSelecionada() {
+            if (selecao.tipo === 'celula') return celulas[selecao.indice];
+            if (selecao.tipo === 'base') return bases[selecao.indice][bases[selecao.indice].length - 1];
+            if (selecao.tipo === 'coluna') return colunas[selecao.indice][colunas[selecao.indice].length - 1];
+            return null;
+        }
+
+        function executarMovimento(tipoDestino, indiceDestino) {
+            let carta = null;
+            if (selecao.tipo === 'celula') { carta = celulas[selecao.indice]; celulas[selecao.indice] = null; }
+            if (selecao.tipo === 'base') { carta = bases[selecao.indice].pop(); }
+            if (selecao.tipo === 'coluna') { carta = colunas[selecao.indice].pop(); }
+
+            if (tipoDestino === 'celula') celulas[indiceDestino] = carta;
+            if (tipoDestino === 'base') bases[indiceDestino].push(carta);
+            if (tipoDestino === 'coluna') colunas[indiceDestino].push(carta);
+        }
+
+        // O Motor Automático do Capitão
+        function podeMoverParaBase(carta) {
+            for (let b = 0; b < 4; b++) {
+                let topo = bases[b].length > 0 ? bases[b][bases[b].length - 1] : null;
+                if (!topo && carta.valor === 1) return b;
+                if (topo && topo.naipe === carta.naipe && carta.valor === topo.valor + 1) return b;
+            }
+            return -1;
+        }
+
+        function varrerMesa() {
+            selecao = null;
+            let fezMovimento = true;
+
+            while (fezMovimento) {
+                fezMovimento = false;
+                
+                // Tentar arrumar das Células
+                for (let i = 0; i < 4; i++) {
+                    if (celulas[i]) {
+                        let b = podeMoverParaBase(celulas[i]);
+                        if (b !== -1) { bases[b].push(celulas[i]); celulas[i] = null; fezMovimento = true; }
+                    }
+                }
+                // Tentar arrumar das Colunas
+                for (let i = 0; i < 8; i++) {
+                    if (colunas[i].length > 0) {
+                        let carta = colunas[i][colunas[i].length - 1];
+                        let b = podeMoverParaBase(carta);
+                        if (b !== -1) { bases[b].push(colunas[i].pop()); fezMovimento = true; }
+                    }
+                }
+            }
+            desenharMesa();
+        }
+
+        function verificarVitoria() {
+            if (bases[0].length === 13 && bases[1].length === 13 && bases[2].length === 13 && bases[3].length === 13) {
+                document.getElementById('mensagem-vitoria').style.display = 'block';
+            }
+        }
+
+        iniciarJogo();
+    </script>
+</body>
+</html>

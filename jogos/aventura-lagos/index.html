@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>Aventura no Mar - Lagos Navigator</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e0f7fa; text-align: center; margin: 0; padding: 20px; }
+        h1 { color: #01579b; font-size: 32px;}
+        .painel { display: flex; justify-content: center; gap: 20px; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+        .cartao { background-color: white; padding: 10px 20px; border-radius: 10px; border: 2px solid #0288d1; color: #0288d1; }
+        .mar { position: relative; background-color: #4fc3f7; width: 880px; height: 100px; margin: 0 auto; border-radius: 10px; border: 3px solid #0288d1; display: flex; align-items: center; padding-left: 10px; }
+        .casa { width: 70px; height: 70px; background-color: rgba(255, 255, 255, 0.6); border-radius: 10px; margin-right: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; color: #01579b; }
+        .casa-perigo { background-color: #ffcc80; color: #d84315; }
+        .casa-porto { background-color: #aed581; color: #33691e; }
+        #barco { position: absolute; top: 15px; left: 15px; font-size: 50px; transition: left 0.8s ease-in-out; z-index: 10; }
+        .controles { margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 20px; flex-direction: column; }
+        button { font-size: 24px; padding: 15px 30px; background-color: #ffb300; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: background-color 0.2s; }
+        button:hover { background-color: #ffa000; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; box-shadow: none; }
+        #dado { font-size: 60px; background-color: white; width: 90px; height: 90px; display: flex; justify-content: center; align-items: center; border-radius: 15px; border: 3px solid #333; }
+        #mensagem { font-size: 26px; font-weight: bold; color: #d84315; margin-top: 20px; height: 30px; }
+        .dado-animacao { animation: tremer 0.5s; }
+        @keyframes tremer { 0% { transform: rotate(0deg); } 25% { transform: rotate(15deg); } 50% { transform: rotate(0deg); } 75% { transform: rotate(-15deg); } 100% { transform: rotate(0deg); } }
+    </style>
+</head>
+<body>
+
+    <h1>Aventura no Mar - Lagos Navigator</h1>
+    
+    <div class="painel">
+        <div class="cartao" id="texto-posicao">Posição: 0</div>
+        <div class="cartao" id="texto-peixes">Peixes: 0</div>
+    </div>
+
+    <!-- O caminho da água com as 11 casas -->
+    <div class="mar">
+        <div class="casa">0</div>
+        <div class="casa">1</div>
+        <div class="casa">2</div>
+        <div class="casa casa-perigo">3 🌀</div>
+        <div class="casa">4</div>
+        <div class="casa">5</div>
+        <div class="casa">6</div>
+        <div class="casa casa-perigo">7 🌀</div>
+        <div class="casa">8</div>
+        <div class="casa">9</div>
+        <div class="casa casa-porto">10 ⚓</div>
+        
+        <!-- O Barco Navigator -->
+        <div id="barco">⛵</div>
+    </div>
+
+    <!-- Os Botões de Jogo -->
+    <div class="controles">
+        <div id="dado">🎲</div>
+        <button id="botao-jogar" onclick="jogar()">Lançar Dado</button>
+        <div id="mensagem">Clica no botão para começar a navegar!</div>
+    </div>
+
+    <!-- O Motor do Jogo (As Regras e Movimentos) -->
+    <script>
+        let posicao = 0;
+        let peixes = 0;
+        const porto = 10;
+        const obstaculos = [3, 7]; // Casas com correntes
+        
+        const barco = document.getElementById("barco");
+        const textoPosicao = document.getElementById("texto-posicao");
+        const textoPeixes = document.getElementById("texto-peixes");
+        const textoMensagem = document.getElementById("mensagem");
+        const botaoJogar = document.getElementById("botao-jogar");
+        const dadoElemento = document.getElementById("dado");
+
+        // Esta função empurra o barco para a casa certa suavemente
+        function moverBarco(casa) {
+            let distancia = 15 + (casa * 78); // Cada casa tem 78 pixels de largura
+            barco.style.left = distancia + "px";
+        }
+
+        function jogar() {
+            // Desliga o botão enquanto o barco anda
+            botaoJogar.disabled = true;
+            
+            // Faz o dado tremer
+            dadoElemento.classList.add("dado-animacao");
+            textoMensagem.innerText = "A rodar o dado...";
+            
+            // Espera meio segundo para mostrar o número
+            setTimeout(() => {
+                dadoElemento.classList.remove("dado-animacao");
+                
+                // Escolhe um número de 1 a 3
+                let dado = Math.floor(Math.random() * 3) + 1;
+                const faces = ["", "⚀", "⚁", "⚂"];
+                dadoElemento.innerText = faces[dado];
+                
+                let novaPosicao = posicao + dado;
+                if (novaPosicao > porto) novaPosicao = porto;
+                
+                moverBarco(novaPosicao);
+                
+                // Espera que o barco acabe de deslizar para verificar os peixes ou as correntes
+                setTimeout(() => {
+                    if (obstaculos.includes(novaPosicao)) {
+                        textoMensagem.innerText = "🌀 Correnteza forte! O Navigator recuou 2 casas.";
+                        novaPosicao = novaPosicao - 2;
+                        moverBarco(novaPosicao);
+                        posicao = novaPosicao;
+                        textoPosicao.innerText = `Posição: ${posicao}`;
+                        botaoJogar.disabled = false;
+                    } else if (novaPosicao < porto) {
+                        peixes++;
+                        textoMensagem.innerText = "🐟 Águas calmas! Apanhaste 1 peixe.";
+                        posicao = novaPosicao;
+                        textoPosicao.innerText = `Posição: ${posicao}`;
+                        textoPeixes.innerText = `Peixes: ${peixes}`;
+                        botaoJogar.disabled = false;
+                    } else {
+                        posicao = porto;
+                        textoPosicao.innerText = `Posição: ${porto}`;
+                        textoMensagem.innerText = `🎉 PARABÉNS! Chegaste ao Porto com ${peixes} peixes! 🎉`;
+                        // O botão fica desligado para o jogo acabar
+                    }
+                }, 800); // 800 milissegundos é o tempo da viagem
+                
+            }, 500);
+        }
+    </script>
+</body>
+</html>

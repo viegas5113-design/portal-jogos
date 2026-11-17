@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>A Pesca do Avô - Aventura no Mar</title>
+    <style>
+        body { 
+            background-color: #2c3e50; 
+            color: white; 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px; 
+            overflow: hidden; /* Evita que o ecrã role ao usar as setas */
+        }
+        h1 { color: #f1c40f; margin-bottom: 5px; font-size: 32px; }
+        p { font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 15px; }
+        #area-jogo { position: relative; display: inline-block; }
+        canvas { 
+            background-color: #1abc9c; 
+            border: 4px solid white; 
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #painel-inicio {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(44, 62, 80, 0.9);
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 10px;
+        }
+        button {
+            padding: 15px 30px; font-size: 24px; font-weight: bold;
+            background-color: #f1c40f; color: #2c3e50;
+            border: none; border-radius: 10px; cursor: pointer;
+        }
+        button:hover { background-color: #f39c12; }
+    </style>
+</head>
+<body>
+
+    <h1 id="texto-pontos">Peixes Pescados: 0</h1>
+    <p>Peixe Laranja = 1 Ponto | Peixe Dourado = 3 Pontos | Bota = Cuidado! | Usa as Setas do Teclado</p>
+
+    <div id="area-jogo">
+        <canvas id="mar" width="700" height="500"></canvas>
+        <div id="painel-inicio">
+            <button id="btn-comecar">Começar Jogo (Ligar Motor)</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("mar");
+        const ctx = canvas.getContext("2d");
+        const textoPontos = document.getElementById("texto-pontos");
+        const painelInicio = document.getElementById("painel-inicio");
+        const btnComecar = document.getElementById("btn-comecar");
+
+        // Regras
+        let pontos = 0;
+        let proximaMeta = 10;
+        let jogoAtivo = false;
+        
+        // O Barco MALEGA
+        let barco = { x: 330, y: 230, largura: 60, altura: 40, velocidade: 20 };
+        
+        // O Alvo
+        let alvo = { x: 0, y: 0, tamanho: 30, tipo: "NORMAL", cor: "#e67e22" };
+        let timerImpaciente;
+
+        // Bolhas
+        let bolhas = [];
+        for(let i=0; i<15; i++) {
+            bolhas.push({
+                x: Math.random() * 680 + 10,
+                y: Math.random() * 480 + 10,
+                raio: Math.random() * 4 + 2,
+                vel: Math.random() * 2 + 1
+            });
+        }
+
+        // --- SISTEMA DE SOM (Substitui o winsound do Python) ---
+        let audioCtx;
+        function tocarSom(frequencias, duracoes) {
+            if (!audioCtx) return;
+            let tempoGeral = audioCtx.currentTime;
+            
+            frequencias.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const ganho = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.value = freq;
+                osc.connect(ganho);
+                ganho.connect(audioCtx.destination);
+                
+                const duracao = duracoes[index] / 1000;
+                ganho.gain.setValueAtTime(0.1, tempoGeral);
+                ganho.gain.exponentialRampToValueAtTime(0.001, tempoGeral + duracao);
+                
+                osc.start(tempoGeral);
+                osc.stop(tempoGeral + duracao);
+                tempoGeral += duracao + 0.05;
+            });
+        }
+
+        const sons = {
+            movimento: () => tocarSom([150], [40]),
+            captura: () => tocarSom([400, 800], [100, 150]),
+            dourado: () => tocarSom([500, 700, 900], [100, 100, 200]),
+            bota: () => tocarSom([100], [400]),
+            festa: () => tocarSom([523, 659, 784, 1046], [150, 150, 150, 400])
+        };
+
+        // --- MOTORES GRÁFICOS ---
+        function desenhar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar Bolhas
+            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+            bolhas.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.raio, 0, Math.PI * 2);
+                ctx.fill();
+                b.y -= b.vel;
+                if (b.y < 0) b.y = 500; // Volta para o fundo
+            });
+
+            // Desenhar Alvo (Peixes ou Bota)
+            ctx.fillStyle = alvo.cor;
+            ctx.beginPath();
+            ctx.arc(alvo.x + 15, alvo.y + 15, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Símbolos dentro do alvo para os mais novos
+            ctx.fillStyle = "white";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            let icone = alvo.tipo === "NORMAL" ? "🐟" : alvo.tipo === "DOURADO" ? "⭐" : "👢";
+            ctx.fillText(icone, alvo.x + 15, alvo.y + 16);
+
+            // Desenhar Barco MALEGA
+            ctx.fillStyle = "#34495e";
+            ctx.fillRect(barco.x, barco.y, barco.largura, barco.altura);
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(barco.x, barco.y, barco.largura, barco.altura);
+            
+            ctx.fillStyle = "white";
+            ctx.font = "12px Arial";
+            ctx.fontWeight = "bold";
+            ctx.fillText("MALEGA", barco.x + 30, barco.y + 20);
+
+            if (jogoAtivo) requestAnimationFrame(desenhar);
+        }
+
+        // --- LÓGICA DO JOGO ---
+        function mudarAlvo() {
+            clearTimeout(timerImpaciente);
+            
+            alvo.x = Math.floor(Math.random() * 610) + 30;
+            alvo.y = Math.floor(Math.random() * 410) + 30;
+            
+            let sorteio = Math.random() * 100;
+            if (sorteio <= 70) {
+                alvo.tipo = "NORMAL"; alvo.cor = "#e67e22";
+            } else if (sorteio <= 85) {
+                alvo.tipo = "DOURADO"; alvo.cor = "#f1c40f";
+            } else {
+                alvo.tipo = "BOTA"; alvo.cor = "#7f8c8d";
+            }
+
+            // O alvo foge após 8 segundos
+            timerImpaciente = setTimeout(mudarAlvo, 8000);
+        }
+
+        function verificarPesca() {
+            // Radar de colisão
+            if (barco.x + barco.largura > alvo.x && barco.x < alvo.x + alvo.tamanho &&
+                barco.y + barco.altura > alvo.y && barco.y < alvo.y + alvo.tamanho) {
+                
+                if (alvo.tipo === "NORMAL") {
+                    pontos += 1;
+                    sons.captura();
+                } else if (alvo.tipo === "DOURADO") {
+                    pontos += 3;
+                    sons.dourado();
+                } else if (alvo.tipo === "BOTA") {
+                    sons.bota();
+                    piscarMarErro();
+                }
+
+                textoPontos.innerText = `Peixes Pescados: ${pontos}`;
+
+                if (pontos >= proximaMeta) {
+                    fazerFesta();
+                    proximaMeta += 10;
+                }
+                mudarAlvo();
+            }
+        }
+
+        function piscarMarErro() {
+            canvas.style.backgroundColor = "#e74c3c"; // Vermelho
+            setTimeout(() => canvas.style.backgroundColor = "#1abc9c", 150); // Volta a azul
+        }
+
+        function fazerFesta() {
+            sons.festa();
+            const cores = ["#9b59b6", "#3498db", "#e74c3c", "#f1c40f", "#1abc9c"];
+            let i = 0;
+            let intervalo = setInterval(() => {
+                canvas.style.backgroundColor = cores[i];
+                i++;
+                if (i >= cores.length) clearInterval(intervalo);
+            }, 300);
+        }
+
+        // --- COMANDOS DO LEME ---
+        window.addEventListener("keydown", (e) => {
+            if (!jogoAtivo) return;
+            
+            let moveu = false;
+            if (e.key === "ArrowUp" && barco.y - barco.velocidade >= 0) {
+                barco.y -= barco.velocidade; moveu = true;
+            } else if (e.key === "ArrowDown" && barco.y + barco.altura + barco.velocidade <= 500) {
+                barco.y += barco.velocidade; moveu = true;
+            } else if (e.key === "ArrowLeft" && barco.x - barco.velocidade >= 0) {
+                barco.x -= barco.velocidade; moveu = true;
+            } else if (e.key === "ArrowRight" && barco.x + barco.largura + barco.velocidade <= 700) {
+                barco.x += barco.velocidade; moveu = true;
+            }
+
+            if (moveu) {
+                e.preventDefault(); // Impede a página de rolar
+                sons.movimento();
+                verificarPesca();
+            }
+        });
+
+        // --- ARRANCAR OS MOTORES ---
+        btnComecar.addEventListener("click", () => {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            painelInicio.style.display = "none";
+            jogoAtivo = true;
+            mudarAlvo();
+            desenhar();
+        });
+
+    </script>
+</body>
+</html>

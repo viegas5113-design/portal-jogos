@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aventura de Plataformas 2D</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+      background: #0f172a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .hud {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+    }
+    canvas {
+      width: 100%;
+      max-width: 700px;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      background: #87ceeb;
+      border: 3px solid #fff;
+      border-radius: 14px;
+      touch-action: none;
+    }
+    .controls {
+      width: 100%;
+      max-width: 700px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.3fr;
+      gap: 10px;
+    }
+    .btn {
+      min-height: 56px;
+      border: none;
+      border-radius: 14px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .btn-jump { background: #10b981; }
+    .btn-reset {
+      border: none;
+      border-radius: 10px;
+      background: #f59e0b;
+      color: #0f172a;
+      font-weight: 800;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Moedas: <strong id="coinsOut" style="color:#fbbf24;">0</strong>/6</span>
+    <span id="statusTxt">Apanhe todas as moedas!</span>
+    <button id="btnReset" class="btn-reset">↺ Reiniciar</button>
+  </div>
+
+  <canvas id="c" width="800" height="600"></canvas>
+
+  <div class="controls">
+    <button id="btnL" class="btn">⬅️</button>
+    <button id="btnR" class="btn">➡️</button>
+    <button id="btnJ" class="btn btn-jump">⬆️ Saltar</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const coinsOut = document.getElementById('coinsOut');
+    const statusTxt = document.getElementById('statusTxt');
+
+    const keys = { left: false, right: false };
+    let player, platforms, coins, enemies, collected, gameOver;
+
+    function init() {
+      player = { x: 60, y: 480, w: 36, h: 46, vx: 0, vy: 0, onGround: false };
+      platforms = [
+        { x: 0, y: 560, w: 800, h: 40 },
+        { x: 140, y: 450, w: 160, h: 22 },
+        { x: 370, y: 370, w: 170, h: 22 },
+        { x: 590, y: 280, w: 160, h: 22 },
+        { x: 240, y: 240, w: 160, h: 22 },
+        { x: 40, y: 170, w: 150, h: 22 }
+      ];
+      coins = [
+        { x: 220, y: 415, r: 14, got: false },
+        { x: 450, y: 335, r: 14, got: false },
+        { x: 670, y: 245, r: 14, got: false },
+        { x: 320, y: 205, r: 14, got: false },
+        { x: 110, y: 135, r: 14, got: false },
+        { x: 740, y: 525, r: 14, got: false }
+      ];
+      enemies = [
+        { x: 420, y: 526, w: 34, h: 34, minX: 320, maxX: 640, dx: 2.6 },
+        { x: 410, y: 336, w: 30, h: 34, minX: 375, maxX: 505, dx: 1.8 }
+      ];
+      collected = 0;
+      gameOver = false;
+      coinsOut.textContent = '0';
+      statusTxt.textContent = 'Apanhe todas as moedas!';
+    }
+
+    function jump() {
+      if (!gameOver && player.onGround) {
+        player.vy = -14;
+        player.onGround = false;
+      }
+    }
+
+    function bindHold(id, prop) {
+      const el = document.getElementById(id);
+      el.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[prop] = true; });
+      el.addEventListener('pointerup', () => { keys[prop] = false; });
+      el.addEventListener('pointercancel', () => { keys[prop] = false; });
+      el.addEventListener('pointerleave', () => { keys[prop] = false; });
+    }
+    bindHold('btnL', 'left');
+    bindHold('btnR', 'right');
+    document.getElementById('btnJ').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
+    document.getElementById('btnReset').addEventListener('click', init);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') keys.left = true;
+      if (e.key === 'ArrowRight') keys.right = true;
+      if (e.key === 'ArrowUp' || e.key === ' ') jump();
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft') keys.left = false;
+      if (e.key === 'ArrowRight') keys.right = false;
+    });
+
+    function loop() {
+      if (!gameOver) {
+        player.vx = keys.left ? -5 : (keys.right ? 5 : 0);
+        player.vy += 0.65;
+        player.x = Math.max(0, Math.min(800 - player.w, player.x + player.vx));
+        player.y += player.vy;
+        player.onGround = false;
+
+        platforms.forEach((p) => {
+          if (player.x + player.w > p.x && player.x < p.x + p.w &&
+              player.y + player.h >= p.y && player.y + player.h <= p.y + p.h + 14 && player.vy >= 0) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          }
+        });
+
+        coins.forEach((c) => {
+          if (!c.got && Math.hypot((player.x + player.w / 2) - c.x, (player.y + player.h / 2) - c.y) < c.r + 22) {
+            c.got = true;
+            collected++;
+            coinsOut.textContent = String(collected);
+            if (collected === coins.length) {
+              gameOver = true;
+              statusTxt.textContent = '🎉 Vitória! Apanhou todas!';
+            }
+          }
+        });
+
+        enemies.forEach((en) => {
+          en.x += en.dx;
+          if (en.x < en.minX || en.x + en.w > en.maxX) en.dx *= -1;
+          if (player.x < en.x + en.w && player.x + player.w > en.x &&
+              player.y < en.y + en.h && player.y + player.h > en.y) {
+            gameOver = true;
+            statusTxt.textContent = '💥 Apanhado! Toque em Reiniciar.';
+          }
+        });
+      }
+
+      ctx.fillStyle = '#87ceeb';
+      ctx.fillRect(0, 0, 800, 600);
+
+      platforms.forEach((p, idx) => {
+        ctx.fillStyle = idx === 0 ? '#22c55e' : '#92400e';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+      });
+
+      coins.forEach((c) => {
+        if (c.got) return;
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      });
+
+      enemies.forEach((en) => {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(en.x, en.y, en.w, en.h);
+      });
+
+      ctx.fillStyle = '#6366f1';
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      requestAnimationFrame(loop);
+    }
+
+    init();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

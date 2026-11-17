@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#070c14">
+  <title>Pesca da Lula 2D - Egi Fishing Interativo</title>
+  <meta name="description" content="Jogo de pesca 2D de lulas em HTML5 Canvas. Sente a emoção da pesca à linha noturna na costa portuguesa!">
+  
+  <style>
+    /* ==========================================================================
+       PESCA DA LULA 2D - Design System & Estilos Responsivos (Telemóvel & Desktop)
+       ========================================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg-dark: #070c14;
+      --bg-card: #0e1726;
+      --bg-card-hover: #152238;
+      --accent-cyan: #00f2ff;
+      --accent-gold: #ffd700;
+      --accent-pink: #ff2a85;
+      --accent-green: #00ff88;
+      --accent-red: #ff3344;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(0, 242, 255, 0.25);
+      --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+    }
+
+    /* App Container */
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Canvas Principal */
+    #canvas-game {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #020509;
+      z-index: 1;
+    }
+
+    /* HUD Superior */
+    .hud-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding-top: calc(8px + var(--safe-top));
+      padding-bottom: 8px;
+      padding-left: 12px;
+      padding-right: 12px;
+      background: rgba(7, 12, 20, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 50;
+    }
+
+    .brand-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-icon {
+      font-size: 24px;
+      filter: drop-shadow(0 0 8px var(--accent-pink));
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    .hud-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-box {
+      background: rgba(14, 23, 38, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 4px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .stat-box .label {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-box .value {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+    }
+
+    .stat-box.coins .value {
+      color: var(--accent-gold);
+    }
+
+    .hud-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-hud {
+      background: linear-gradient(180deg, #1e2c42, #101b2b);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      touch-action: manipulation;
+    }
+
+    .btn-hud:active {
+      transform: scale(0.95);
+      background: var(--accent-cyan);
+      color: #000;
+    }
+
+    .btn-hud.accent-gold {
+      border-color: rgba(255, 215, 0, 0.5);
+      color: var(--accent-gold);
+    }
+
+    /* Controlos Flutuantes Inferiores */
+    .controls-overlay {
+      position: absolute;
+      bottom: calc(12px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 94%;
+      max-width: 500px;
+      background: rgba(7, 12, 20, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 30px;
+      z-index: 50;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+
+    .btn-action {
+      flex: 1;
+      height: 48px;
+      padding: 0 8px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      touch-action: manipulation;
+      white-space: nowrap;
+    }
+
+    .btn-action.reel {
+      background: linear-gradient(135deg, #00d2ff, #0072ff);
+      color: #fff;
+      flex: 1.3;
+    }
+
+    .btn-action.reel:active, .btn-action.reel.touch-active {
+      background: linear-gradient(135deg, #33dcff, #1a82ff);
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.8);
+      transform: scale(0.96);
+    }
+
+    .btn-action.jerk {
+      background: linear-gradient(135deg, #ff007f, #7928ca);
+      color: #fff;
+    }
+
+    .btn-action.jerk:active, .btn-action.jerk.touch-active {
+      background: linear-gradient(135deg, #ff3399, #8e3cd9);
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.8);
+      transform: scale(0.96);
+    }
+
+    .btn-action.drop {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: #fff;
+    }
+
+    .btn-action.drop:active, .btn-action.drop.touch-active {
+      background: linear-gradient(135deg, #1db3a6, #52f491);
+      box-shadow: 0 0 20px rgba(56, 239, 125, 0.8);
+      transform: scale(0.96);
+    }
+
+    /* Indicador de Tensão Lateral */
+    .tension-container {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 220px;
+      background: rgba(7, 12, 20, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .tension-label {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--text-muted);
+      writing-mode: vertical-rl;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .tension-bar-outer {
+      width: 100%;
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tension-bar-inner {
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(0deg, var(--accent-cyan) 0%, var(--accent-green) 50%, var(--accent-gold) 75%, var(--accent-red) 100%);
+      border-radius: 10px;
+      transition: height 0.08s ease-out;
+    }
+
+    .tension-zone-ideal {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 35%;
+      height: 40%;
+      border-top: 2px dashed rgba(255, 255, 255, 0.6);
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.6);
+      background: rgba(0, 255, 136, 0.15);
+      pointer-events: none;
+    }
+
+    /* Modais de Ecrã Inteiro em Telemóvel */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 5, 9, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 10px;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 580px;
+      max-height: 88vh;
+      max-height: 88dvh;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-backdrop.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 12px 16px;
+      background: rgba(14, 23, 38, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    .btn-close:active {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
+    }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .shop-item-card {
+      background: rgba(21, 34, 56, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+    }
+
+    .shop-item-icon {
+      font-size: 30px;
+    }
+
+    .shop-item-name {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .shop-item-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .shop-item-btn {
+      margin-top: auto;
+      width: 100%;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid var(--accent-gold);
+      background: rgba(255, 215, 0, 0.15);
+      color: var(--accent-gold);
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .shop-item-btn:active:not(:disabled) {
+      background: var(--accent-gold);
+      color: #000;
+    }
+
+    .shop-item-btn:disabled {
+      opacity: 0.4;
+      border-color: var(--text-muted);
+      color: var(--text-muted);
+    }
+
+    /* Aquário */
+    .aquarium-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .aquarium-tank {
+      width: 100%;
+      height: 160px;
+      background: radial-gradient(circle at center, #0a2540 0%, #030a14 100%);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #canvas-aquarium {
+      width: 100%;
+      height: 100%;
+    }
+
+    .caught-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .caught-card {
+      background: rgba(21, 34, 56, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .caught-card .name {
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    /* Banner de Eventos */
+    .event-banner {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(255, 42, 133, 0.95);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 0 25px rgba(255, 42, 133, 0.8);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 60;
+      max-width: 90vw;
+    }
+
+    .event-banner.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 440px) {
+      .brand-title { display: none; }
+      .stat-box { min-width: 52px; padding: 2px 4px; }
+      .stat-box .value { font-size: 11px; }
+      .btn-hud { padding: 4px 6px; font-size: 11px; }
+      .controls-overlay { bottom: 8px; padding: 6px 8px; gap: 4px; }
+      .btn-action { height: 44px; font-size: 11px; padding: 0 4px; }
+      .tension-container { right: 4px; height: 170px; width: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    
+    <!-- Canvas Principal -->
+    <canvas id="canvas-game"></canvas>
+
+    <!-- HUD Superior -->
+    <header class="hud-header">
+      <div class="brand-badge">
+        <span class="brand-icon">🦑</span>
+        <h1 class="brand-title">Pesca da Lula 2D</h1>
+      </div>
+
+      <div class="hud-stats">
+        <div class="stat-box">
+          <span class="label">Prof</span>
+          <span class="value" id="depth-val">0.0m</span>
+        </div>
+
+        <div class="stat-box coins">
+          <span class="label">Moedas</span>
+          <span class="value">💰 <span id="coins-val">50</span></span>
+        </div>
+
+        <div class="stat-box">
+          <span class="label">Pontos</span>
+          <span class="value" id="score-val">0</span>
+        </div>
+      </div>
+
+      <div class="hud-actions">
+        <button class="btn-hud accent-gold" id="btn-shop">🏪 Loja</button>
+        <button class="btn-hud" id="btn-aquarium">🐠 Aquário</button>
+        <a href="index.html" class="btn-hud" style="text-decoration:none;">🧩 Voltar</a>
+      </div>
+    </header>
+
+    <!-- Indicador de Tensão da Linha -->
+    <div class="tension-container">
+      <div class="tension-label">Tensão</div>
+      <div class="tension-bar-outer">
+        <div class="tension-zone-ideal"></div>
+        <div class="tension-bar-inner" id="tension-inner"></div>
+      </div>
+    </div>
+
+    <!-- Banner Flutuante de Eventos -->
+    <div class="event-banner" id="event-banner">
+      🦑 FISGOU! ENROLA COM CUIDADO!
+    </div>
+
+    <!-- Barra de Controlos Flutuantes -->
+    <div class="controls-overlay">
+      <button class="btn-action drop" id="btn-drop">
+        <span>🌊</span> Lançar Linha
+      </button>
+      <button class="btn-action jerk" id="btn-jerk">
+        <span>⚡</span> Esticão (Espaço)
+      </button>
+      <button class="btn-action reel" id="btn-reel">
+        <span>🎣</span> Enrolar Linha
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Modal da Loja -->
+  <div class="modal-backdrop" id="modal-shop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">🏪 Loja de Equipamento de Pesca</h2>
+        <button class="btn-close" id="btn-close-shop">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal do Aquário -->
+  <div class="modal-backdrop" id="modal-aquarium">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">🐠 Aquário & Registo de Capturas</h2>
+        <button class="btn-close" id="btn-close-aquarium">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="aquarium-container">
+          <div class="aquarium-tank">
+            <canvas id="canvas-aquarium" width="500" height="160"></canvas>
+          </div>
+          <h3 style="color:var(--accent-cyan); font-size:14px;">Coleção de Cefalópodes Capturados</h3>
+          <div class="caught-list" id="caught-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motor de Jogo Embutido (Fail-Safe) -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Áudio Sintetizado
+      class SoundEngine {
+        constructor() { this.ctx = null; this.enabled = true; }
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        playSplash() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.2, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+          filter.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+          const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+          noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+          noise.start();
+        }
+        playReel() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(250 + Math.random() * 80, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.05, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+          osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.04);
+        }
+        playJerk() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(450, this.ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+          osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+        }
+        playStrike() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.05);
+            gain.gain.setValueAtTime(0.15, this.ctx.currentTime + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.05 + 0.3);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(this.ctx.currentTime + i * 0.05); osc.stop(this.ctx.currentTime + i * 0.05 + 0.3);
+          });
+        }
+        playInk() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+          const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+          noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
+        }
+        playCoin() {
+          if (!this.enabled) return; this.init(); if (!this.ctx) return;
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = 'sine'; osc.frequency.setValueAtTime(987.77, this.ctx.currentTime); osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+          osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+        }
+      }
+
+      function triggerVibrate(pattern) {
+        if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+      }
+
+      const SQUID_SPECIES = [
+        { id: 'lula_costa', name: 'Lula-da-Costa', color: '#e67e22', glow: '#f39c12', minDepth: 2, maxDepth: 25, weightMin: 0.3, weightMax: 1.2, baseValue: 15, fightPower: 1.0, jetFreq: 0.02 },
+        { id: 'pota_argentina', name: 'Pota-da-Meia-Laranja', color: '#c0392b', glow: '#e74c3c', minDepth: 10, maxDepth: 40, weightMin: 1.5, weightMax: 4.5, baseValue: 40, fightPower: 1.8, jetFreq: 0.04 },
+        { id: 'choco_comum', name: 'Choco-da-Ria', color: '#7f8c8d', glow: '#bdc3c7', minDepth: 5, maxDepth: 30, weightMin: 0.8, weightMax: 2.5, baseValue: 25, fightPower: 1.3, jetFreq: 0.015 },
+        { id: 'lula_biolum', name: 'Lula-Bioluminescente', color: '#00f2ff', glow: '#00ff88', minDepth: 25, maxDepth: 55, weightMin: 0.5, weightMax: 1.8, baseValue: 75, fightPower: 1.5, jetFreq: 0.03 },
+        { id: 'lula_gigante', name: 'Lula-Gigante Abissal', color: '#8e44ad', glow: '#9b59b6', minDepth: 40, maxDepth: 60, weightMin: 6.0, weightMax: 15.0, baseValue: 200, fightPower: 2.8, jetFreq: 0.06 }
+      ];
+
+      const GameState = {
+        coins: 50, score: 0, catchesCount: 0,
+        equippedLure: 0, equippedLight: 0, equippedLine: 0, equippedReel: 0,
+        inventory: [],
+        lures: [
+          { name: 'Palhaço Clássico', color: '#ff7700', power: 1.0, cost: 0, icon: '🦑' },
+          { name: 'Egi Rosa Neon', color: '#ff007f', power: 1.4, cost: 60, icon: '💖' },
+          { name: 'Egi Azul UV', color: '#00f2ff', power: 1.9, cost: 140, icon: '⚡' },
+          { name: 'Egi Dourado Abissal', color: '#ffd700', power: 2.6, cost: 300, icon: '👑' }
+        ],
+        lights: [
+          { name: 'Candeeiro Halogéneo', radius: 140, cost: 0, icon: '💡' },
+          { name: 'Farol LED Submersível', radius: 220, cost: 80, icon: '🔦' },
+          { name: 'Luz UV Atraente', radius: 320, cost: 200, icon: '🌟' }
+        ],
+        lines: [
+          { name: 'Nylon 0.30mm', maxTension: 100, cost: 0, icon: '🧵' },
+          { name: 'Multifilamento PE', maxTension: 160, cost: 100, icon: '🎗️' },
+          { name: 'Núcleo Titânio', maxTension: 240, cost: 250, icon: '⚓' }
+        ],
+        reels: [
+          { name: 'Carreteto Básico 3:1', speed: 1.0, cost: 0, icon: '⚙️' },
+          { name: 'Carreteto Rápido 5:1', speed: 1.6, cost: 70, icon: '⚡' },
+          { name: 'Carreteto Elétrico 7:1', speed: 2.3, cost: 180, icon: '🚀' }
+        ]
+      };
+
+      let canvas, ctx, aquariumCanvas, aquariumCtx;
+      let sound = new SoundEngine();
+      let width = 0, height = 0, dpr = 1;
+      let time = 0;
+
+      const MODE = { IDLE: 'IDLE', FISHING: 'FISHING', HOOKED: 'HOOKED' };
+      let currentMode = MODE.IDLE;
+
+      let lureDepth = 0, cameraDepth = 0, lureX = 0, lureY = 0, tension = 0;
+      let hookedSquid = null, activeSquids = [], particles = [], inkSplats = [];
+      const boat = { x: 0, y: 0, waveOffset: 0 };
+      let isReeling = false;
+
+      class Squid {
+        constructor(species, depth) {
+          this.species = species;
+          this.depth = depth;
+          this.x = Math.random() * (width - 140) + 70;
+          this.y = 0;
+          this.vx = (Math.random() - 0.5) * 1.5;
+          this.vy = (Math.random() - 0.5) * 0.5;
+          this.size = Math.random() * 12 + 20;
+          this.weight = (Math.random() * (species.weightMax - species.weightMin) + species.weightMin).toFixed(2);
+          this.tentaclePhase = Math.random() * Math.PI * 2;
+          this.state = 'SWIMMING';
+        }
+
+        update() {
+          this.tentaclePhase += 0.08;
+          if (this.state === 'SWIMMING') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 50 || this.x > width - 50) this.vx *= -1;
+
+            const lightSpec = GameState.lights[GameState.equippedLight];
+            const distToLure = Math.hypot(this.x - lureX, this.y - lureY);
+
+            if (currentMode === MODE.FISHING && distToLure < lightSpec.radius) {
+              const angle = Math.atan2(lureY - this.y, lureX - this.x);
+              const lurePower = GameState.lures[GameState.equippedLure].power;
+              this.vx = Math.cos(angle) * (1.2 * lurePower);
+              this.vy = Math.sin(angle) * (1.2 * lurePower);
+
+              if (distToLure < 25 && Math.random() < 0.05) hookSquid(this);
+            }
+          }
+        }
+
+        draw(renderCtx, screenX, screenY) {
+          renderCtx.save();
+          renderCtx.translate(screenX, screenY);
+          const angle = Math.atan2(this.vy, this.vx);
+          renderCtx.rotate(angle - Math.PI / 2);
+
+          renderCtx.shadowColor = this.species.glow;
+          renderCtx.shadowBlur = this.species.id === 'lula_biolum' ? 18 : 6;
+
+          renderCtx.fillStyle = this.species.color;
+          renderCtx.beginPath();
+          renderCtx.moveTo(0, -this.size);
+          renderCtx.bezierCurveTo(this.size * 0.6, -this.size * 0.5, this.size * 0.5, this.size * 0.5, 0, this.size * 0.6);
+          renderCtx.bezierCurveTo(-this.size * 0.5, this.size * 0.5, -this.size * 0.6, -this.size * 0.5, 0, -this.size);
+          renderCtx.fill();
+
+          renderCtx.beginPath();
+          renderCtx.moveTo(0, -this.size);
+          renderCtx.lineTo(this.size * 0.7, -this.size * 0.4);
+          renderCtx.lineTo(0, -this.size * 0.1);
+          renderCtx.lineTo(-this.size * 0.7, -this.size * 0.4);
+          renderCtx.closePath();
+          renderCtx.fill();
+
+          renderCtx.fillStyle = '#ffffff';
+          renderCtx.beginPath();
+          renderCtx.arc(-this.size * 0.25, 0, 3, 0, Math.PI * 2);
+          renderCtx.arc(this.size * 0.25, 0, 3, 0, Math.PI * 2);
+          renderCtx.fill();
+
+          renderCtx.fillStyle = '#000000';
+          renderCtx.beginPath();
+          renderCtx.arc(-this.size * 0.25, 0, 1.5, 0, Math.PI * 2);
+          renderCtx.arc(this.size * 0.25, 0, 1.5, 0, Math.PI * 2);
+          renderCtx.fill();
+
+          renderCtx.strokeStyle = this.species.color;
+          renderCtx.lineWidth = 2;
+          renderCtx.lineCap = 'round';
+
+          for (let i = -3; i <= 3; i++) {
+            const wave = Math.sin(this.tentaclePhase + i * 0.4) * 6;
+            const length = (i === -1 || i === 1) ? this.size * 1.3 : this.size * 0.8;
+            renderCtx.beginPath();
+            renderCtx.moveTo(i * 3, this.size * 0.5);
+            renderCtx.quadraticCurveTo(i * 4 + wave, this.size * 0.8, i * 3 + wave * 1.3, this.size * 0.5 + length);
+            renderCtx.stroke();
+          }
+          renderCtx.restore();
+        }
+      }
+
+      function hookSquid(squid) {
+        currentMode = MODE.HOOKED;
+        hookedSquid = squid;
+        hookedSquid.state = 'HOOKED';
+        tension = 40;
+        sound.playStrike();
+        triggerVibrate([100, 50, 100]);
+        showBanner('🦑 FISGOU! ENROLA COM CUIDADO!');
+        activeSquids = activeSquids.filter(s => s !== squid);
+      }
+
+      function emitInkCloud(x, y) {
+        sound.playInk();
+        triggerVibrate([80]);
+        for (let i = 0; i < 18; i++) {
+          particles.push({
+            x: x + (Math.random() - 0.5) * 20,
+            y: y + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            radius: Math.random() * 15 + 8,
+            alpha: 0.8,
+            color: '#05070a'
+          });
+        }
+        inkSplats.push({
+          x: Math.random() * (width - 60) + 30,
+          y: Math.random() * (height - 60) + 30,
+          radius: Math.random() * 30 + 20,
+          alpha: 0.9
+        });
+      }
+
+      function init() {
+        canvas = document.getElementById('canvas-game');
+        if (!canvas) return;
+        ctx = canvas.getContext('2d');
+
+        aquariumCanvas = document.getElementById('canvas-aquarium');
+        if (aquariumCanvas) aquariumCtx = aquariumCanvas.getContext('2d');
+
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+        // Eventos Touch no Canvas (Apenas se tocar no canvas diretamente)
+        canvas.addEventListener('touchstart', (e) => {
+          if (e.target !== canvas) return;
+          e.preventDefault();
+          sound.init();
+          const touchX = e.touches[0].clientX;
+          if (touchX > width * 0.5) {
+            reelIn(true);
+          } else {
+            if (currentMode === MODE.IDLE) dropLine();
+            else jerkLure();
+          }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+          if (e.target !== canvas) return;
+          e.preventDefault();
+          reelIn(false);
+        }, { passive: false });
+
+        // Teclado
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space') { e.preventDefault(); jerkLure(); }
+          else if (e.code === 'ArrowUp' || e.code === 'KeyW') { reelIn(true); }
+          else if (e.code === 'ArrowDown' || e.code === 'KeyS') { dropLine(); }
+        });
+        window.addEventListener('keyup', (e) => {
+          if (e.code === 'ArrowUp' || e.code === 'KeyW') { reelIn(false); }
+        });
+
+        // Setup Botões Touch & Click
+        setupTouchBtn('btn-reel', () => reelIn(true), () => reelIn(false));
+        setupTouchBtn('btn-jerk', jerkLure);
+        setupTouchBtn('btn-drop', dropLine);
+
+        document.getElementById('btn-shop').onclick = openShop;
+        document.getElementById('btn-aquarium').onclick = openAquarium;
+        document.getElementById('btn-close-shop').onclick = closeShop;
+        document.getElementById('btn-close-aquarium').onclick = closeAquarium;
+
+        spawnSquids();
+        requestAnimationFrame(gameLoop);
+      }
+
+      function setupTouchBtn(id, startFn, endFn) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+
+        btn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          sound.init();
+          btn.classList.add('touch-active');
+          if (startFn) startFn();
+        }, { passive: false });
+
+        btn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          btn.classList.remove('touch-active');
+          if (endFn) endFn();
+        }, { passive: false });
+
+        btn.addEventListener('mousedown', () => {
+          sound.init();
+          btn.classList.add('touch-active');
+          if (startFn) startFn();
+        });
+
+        btn.addEventListener('mouseup', () => {
+          btn.classList.remove('touch-active');
+          if (endFn) endFn();
+        });
+      }
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+
+        boat.x = width < 600 ? width * 0.25 : width * 0.35;
+        boat.y = 120;
+      }
+
+      function spawnSquids() {
+        activeSquids = [];
+        for (let i = 0; i < 14; i++) {
+          const species = SQUID_SPECIES[Math.floor(Math.random() * SQUID_SPECIES.length)];
+          const depth = Math.random() * (species.maxDepth - species.minDepth) + species.minDepth;
+          const squid = new Squid(species, depth);
+          squid.y = 140 + depth * 35;
+          activeSquids.push(squid);
+        }
+      }
+
+      function dropLine() {
+        if (currentMode === MODE.IDLE) {
+          currentMode = MODE.FISHING;
+          sound.playSplash();
+          triggerVibrate([40]);
+        }
+      }
+
+      function jerkLure() {
+        sound.playJerk();
+        triggerVibrate([30]);
+        if (currentMode === MODE.FISHING || currentMode === MODE.HOOKED) {
+          lureY -= 15;
+          for (let i = 0; i < 5; i++) {
+            particles.push({
+              x: lureX + (Math.random() - 0.5) * 10,
+              y: lureY,
+              vx: (Math.random() - 0.5) * 1,
+              vy: -Math.random() * 2 - 1,
+              radius: Math.random() * 3 + 2,
+              alpha: 0.7,
+              color: '#00f2ff'
+            });
+          }
+        }
+      }
+
+      function reelIn(active) { isReeling = active; }
+
+      function update() {
+        time += 0.05;
+        boat.waveOffset = Math.sin(time) * 4;
+        const boatTipX = boat.x + (width < 600 ? 80 : 110);
+        const boatTipY = boat.y - 45 + boat.waveOffset;
+
+        lureX = boatTipX;
+
+        if (currentMode === MODE.IDLE) {
+          lureDepth = 0;
+          lureY = boatTipY;
+        } else if (currentMode === MODE.FISHING) {
+          if (!isReeling) {
+            lureDepth = Math.min(60, lureDepth + 0.1);
+          } else {
+            lureDepth = Math.max(0, lureDepth - 0.25 * GameState.reels[GameState.equippedReel].speed);
+            sound.playReel();
+            if (lureDepth <= 0) currentMode = MODE.IDLE;
+          }
+          lureY = 140 + lureDepth * 35;
+        } else if (currentMode === MODE.HOOKED) {
+          const reelSpec = GameState.reels[GameState.equippedReel];
+
+          if (isReeling) {
+            lureDepth -= 0.2 * reelSpec.speed;
+            tension += 1.2 * hookedSquid.species.fightPower;
+            sound.playReel();
+          } else {
+            lureDepth += 0.08;
+            tension -= 0.8;
+          }
+
+          if (Math.random() < hookedSquid.species.jetFreq) {
+            tension += 18 * hookedSquid.species.fightPower;
+            emitInkCloud(lureX, lureY);
+          }
+
+          tension = Math.max(0, Math.min(100, tension));
+          lureY = 140 + lureDepth * 35;
+
+          if (tension >= 98) {
+            currentMode = MODE.IDLE;
+            hookedSquid = null;
+            tension = 0;
+            sound.playSplash();
+            triggerVibrate([200, 100, 200]);
+            showBanner('💥 A LINHA PARTIU! A LULA ESCAPOU!');
+          }
+
+          if (tension <= 5 && lureDepth > 2) {
+            currentMode = MODE.IDLE;
+            hookedSquid = null;
+            tension = 0;
+            triggerVibrate([150]);
+            showBanner('🌊 A LULA DESESCACOU DAS AGULHAS!');
+          }
+
+          if (lureDepth <= 0.5) catchSuccess();
+        }
+
+        cameraDepth += (lureY - height * 0.4 - cameraDepth) * 0.05;
+        cameraDepth = Math.max(0, cameraDepth);
+
+        activeSquids.forEach(squid => squid.update());
+        if (activeSquids.length < 10) spawnSquids();
+
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.alpha -= 0.008; });
+        particles = particles.filter(p => p.alpha > 0);
+
+        inkSplats.forEach(s => s.alpha -= 0.001);
+        inkSplats = inkSplats.filter(s => s.alpha > 0);
+
+        document.getElementById('depth-val').innerText = `${lureDepth.toFixed(1)}m`;
+        document.getElementById('coins-val').innerText = GameState.coins;
+        document.getElementById('score-val').innerText = GameState.score;
+        document.getElementById('tension-inner').style.height = `${tension}%`;
+      }
+
+      function catchSuccess() {
+        const squid = hookedSquid;
+        currentMode = MODE.IDLE;
+        hookedSquid = null;
+        tension = 0;
+
+        const value = Math.round(squid.species.baseValue * (squid.weight / squid.species.weightMin));
+        GameState.coins += value;
+        GameState.score += value * 10;
+        GameState.catchesCount++;
+
+        GameState.inventory.push({ species: squid.species, weight: squid.weight, value: value });
+
+        sound.playCoin();
+        triggerVibrate([80, 40, 80, 40, 120]);
+        showBanner(`🎉 CAPTURASTE ${squid.species.name.toUpperCase()} (${squid.weight}kg) +${value} 💰`);
+      }
+
+      function draw() {
+        // Limpar canvas e aplicar escala Retina sem acumulação
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(dpr, dpr);
+
+        ctx.save();
+        ctx.translate(0, -cameraDepth);
+
+        // Céu
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, 140);
+        skyGrad.addColorStop(0, '#030712');
+        skyGrad.addColorStop(1, '#0b162c');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, width, 140);
+
+        // Estrelas
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 25; i++) {
+          const sx = (i * 137.5) % width;
+          const sy = (i * 53.1) % 110;
+          ctx.globalAlpha = ((Math.sin(time + i) + 1) / 2) * 0.8;
+          ctx.fillRect(sx, sy, 1.5, 1.5);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Oceano
+        const oceanGrad = ctx.createLinearGradient(0, 140, 0, 140 + 60 * 35);
+        oceanGrad.addColorStop(0, '#0a2e4d');
+        oceanGrad.addColorStop(0.3, '#041628');
+        oceanGrad.addColorStop(0.7, '#020b14');
+        oceanGrad.addColorStop(1.0, '#010408');
+        ctx.fillStyle = oceanGrad;
+        ctx.fillRect(0, 140, width, 60 * 35 + 500);
+
+        // Cone de Luz
+        const lightSpec = GameState.lights[GameState.equippedLight];
+        const boatTipX = boat.x + (width < 600 ? 80 : 110);
+        const boatTipY = boat.y - 45 + boat.waveOffset;
+
+        const coneGrad = ctx.createRadialGradient(boatTipX, boatTipY, 10, boatTipX, boatTipY + 200, lightSpec.radius * 1.8);
+        coneGrad.addColorStop(0, 'rgba(0, 242, 255, 0.4)');
+        coneGrad.addColorStop(0.5, 'rgba(0, 242, 255, 0.15)');
+        coneGrad.addColorStop(1, 'rgba(0, 242, 255, 0)');
+
+        ctx.fillStyle = coneGrad;
+        ctx.beginPath();
+        ctx.moveTo(boatTipX, boatTipY);
+        ctx.lineTo(boatTipX - lightSpec.radius, boatTipY + lightSpec.radius * 2.2);
+        ctx.lineTo(boatTipX + lightSpec.radius, boatTipY + lightSpec.radius * 2.2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Barco
+        drawBoat(boat.x, boat.y + boat.waveOffset);
+
+        // Linha
+        if (currentMode !== MODE.IDLE) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(boatTipX, boatTipY);
+          const midY = (boatTipY + lureY) / 2;
+          ctx.quadraticCurveTo(boatTipX + Math.sin(time * 2) * 4, midY, lureX, lureY);
+          ctx.stroke();
+
+          drawLure(lureX, lureY);
+        }
+
+        activeSquids.forEach(squid => squid.draw(ctx, squid.x, squid.y));
+        if (hookedSquid) hookedSquid.draw(ctx, lureX, lureY + 15);
+
+        particles.forEach(p => {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        // Superfície
+        ctx.fillStyle = 'rgba(0, 242, 255, 0.15)';
+        ctx.beginPath();
+        ctx.moveTo(0, 140);
+        for (let x = 0; x <= width; x += 25) {
+          ctx.lineTo(x, 140 + Math.sin(x * 0.02 + time * 2) * 4);
+        }
+        ctx.lineTo(width, 160);
+        ctx.lineTo(0, 160);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Tinta
+        inkSplats.forEach(s => {
+          ctx.save();
+          ctx.globalAlpha = s.alpha;
+          ctx.fillStyle = '#05070a';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      function drawBoat(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        const scale = width < 600 ? 0.8 : 1.0;
+        ctx.scale(scale, scale);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#00f2ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-75, -10); ctx.lineTo(85, -10); ctx.lineTo(55, 25); ctx.lineTo(-55, 25);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(25, -10); ctx.lineTo(105, -45); ctx.stroke();
+
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath(); ctx.arc(105, -42, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawLure(x, y) {
+        const lureSpec = GameState.lures[GameState.equippedLure];
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = lureSpec.color;
+        ctx.shadowColor = lureSpec.color; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.ellipse(0, 0, 4, 12, 0, 0, Math.PI * 2); ctx.fill();
+
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+        for (let i = -3; i <= 3; i += 2) {
+          ctx.beginPath(); ctx.moveTo(i, 12); ctx.lineTo(i * 2, 18); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
+      function showBanner(text) {
+        const banner = document.getElementById('event-banner');
+        banner.innerText = text;
+        banner.classList.add('active');
+        setTimeout(() => banner.classList.remove('active'), 3000);
+      }
+
+      function openShop() { renderShopGrid(); document.getElementById('modal-shop').classList.add('active'); }
+      function closeShop() { document.getElementById('modal-shop').classList.remove('active'); }
+
+      function renderShopGrid() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        GameState.lures.forEach((item, index) => {
+          const isEquipped = GameState.equippedLure === index;
+          const card = document.createElement('div');
+          card.className = 'shop-item-card';
+          card.innerHTML = `
+            <div class="shop-item-icon">${item.icon}</div>
+            <div class="shop-item-name">${item.name}</div>
+            <div class="shop-item-desc">Atracção x${item.power}</div>
+            <button class="shop-item-btn" ${isEquipped ? 'disabled' : ''}>
+              ${isEquipped ? 'Equipado' : `Comprar (${item.cost}💰)`}
+            </button>
+          `;
+          card.querySelector('button').onclick = () => {
+            if (GameState.coins >= item.cost) {
+              if (!isEquipped && item.cost > 0) GameState.coins -= item.cost;
+              GameState.equippedLure = index;
+              sound.playCoin(); triggerVibrate([50]); renderShopGrid();
+            }
+          };
+          grid.appendChild(card);
+        });
+
+        GameState.lights.forEach((item, index) => {
+          const isEquipped = GameState.equippedLight === index;
+          const card = document.createElement('div');
+          card.className = 'shop-item-card';
+          card.innerHTML = `
+            <div class="shop-item-icon">${item.icon}</div>
+            <div class="shop-item-name">${item.name}</div>
+            <div class="shop-item-desc">Luz ${item.radius}px</div>
+            <button class="shop-item-btn" ${isEquipped ? 'disabled' : ''}>
+              ${isEquipped ? 'Equipado' : `Comprar (${item.cost}💰)`}
+            </button>
+          `;
+          card.querySelector('button').onclick = () => {
+            if (GameState.coins >= item.cost) {
+              if (!isEquipped && item.cost > 0) GameState.coins -= item.cost;
+              GameState.equippedLight = index;
+              sound.playCoin(); triggerVibrate([50]); renderShopGrid();
+            }
+          };
+          grid.appendChild(card);
+        });
+      }
+
+      function openAquarium() { renderAquarium(); document.getElementById('modal-aquarium').classList.add('active'); }
+      function closeAquarium() { document.getElementById('modal-aquarium').classList.remove('active'); }
+
+      function renderAquarium() {
+        const list = document.getElementById('caught-list');
+        list.innerHTML = '';
+        if (GameState.inventory.length === 0) {
+          list.innerHTML = '<p style="color:var(--text-muted); grid-column: 1/-1; text-align:center;">Nenhuma lula capturada ainda.</p>';
+          return;
+        }
+        GameState.inventory.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'caught-card';
+          card.innerHTML = `<div class="name">${item.species.name}</div><div>⚖️ ${item.weight} kg</div><div style="color:var(--accent-gold);">+${item.value} 💰</div>`;
+          list.appendChild(card);
+        });
+
+        if (aquariumCtx) {
+          aquariumCtx.clearRect(0, 0, aquariumCanvas.width, aquariumCanvas.height);
+          GameState.inventory.slice(-5).forEach((item, idx) => {
+            const dummySquid = new Squid(item.species, 10);
+            dummySquid.draw(aquariumCtx, 30 + idx * 60, 80);
+          });
+        }
+      }
+
+      // Execução à prova de falha
+      if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        init();
+      } else {
+        document.addEventListener('DOMContentLoaded', init);
+      }
+
+    })();
+  </script>
+
+</body>
+</html>

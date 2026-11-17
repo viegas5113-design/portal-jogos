@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <title>A Paciência do Capitão</title>
+    <style>
+        body {
+            background-color: #27ae60; 
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            user-select: none; 
+        }
+        h1 { color: white; text-align: center; margin-top: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); margin-bottom: 5px; }
+        
+        .painel-controlo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .btn-varrer {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #f1c40f;
+            color: #2c3e50;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background-color 0.2s;
+        }
+        .btn-varrer:hover { background-color: #f39c12; }
+
+        #mesa-jogo {
+            width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .linha-topo { display: flex; gap: 20px; margin-bottom: 30px; height: 160px; }
+        .linha-baixo { display: flex; gap: 20px; height: 500px; }
+        
+        .espaco {
+            width: 100px;
+            height: 140px;
+            border: 2px dashed rgba(255,255,255,0.4);
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .separador { width: 100px; border: none; }
+
+        .carta {
+            width: 100px;
+            height: 140px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            position: absolute;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            box-sizing: border-box;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .carta:hover { transform: translateY(-2px); }
+        
+        .carta-costas {
+            background: repeating-linear-gradient(45deg, #2980b9, #2980b9 10px, #3498db 10px, #3498db 20px);
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .vermelho { color: #e74c3c; }
+        .preto { color: #2c3e50; }
+
+        .selecionada {
+            box-shadow: 0 0 15px 5px #f1c40f;
+            border: 2px solid #f1c40f;
+            z-index: 100 !important;
+        }
+
+        .naipe-centro { font-size: 40px; text-align: center; margin-top: 15px; }
+        .carta-topo { align-self: flex-start; }
+        .carta-fundo { align-self: flex-end; transform: rotate(180deg); }
+
+        #mensagem-vitoria {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background-color: #f1c40f; color: #2c3e50; padding: 40px; border-radius: 20px;
+            font-size: 40px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; z-index: 1000; text-align: center; border: 5px solid white;
+        }
+        .btn-novo {
+            margin-top: 20px; padding: 10px 20px; font-size: 20px; font-weight: bold;
+            cursor: pointer; border: none; border-radius: 8px; background: #2c3e50; color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>A Paciência do Capitão Aorus ♠♥♣♦</h1>
+    
+    <div class="painel-controlo">
+        <button class="btn-varrer" onclick="varrerMesa()">✨ Varrer a Mesa (Recolher Cartas Automático)</button>
+    </div>
+
+    <div id="mesa-jogo">
+        <div class="linha-topo">
+            <div id="baralho" class="espaco" onclick="cliqueBaralho()"></div>
+            <div id="lixo" class="espaco" onclick="cliqueLixo()"></div>
+            <div class="separador"></div>
+            <div id="base0" class="espaco" onclick="cliqueBase(0)"></div>
+            <div id="base1" class="espaco" onclick="cliqueBase(1)"></div>
+            <div id="base2" class="espaco" onclick="cliqueBase(2)"></div>
+            <div id="base3" class="espaco" onclick="cliqueBase(3)"></div>
+        </div>
+
+        <div class="linha-baixo">
+            <div id="pilha0" class="espaco" onclick="cliquePilha(0, -1)"></div>
+            <div id="pilha1" class="espaco" onclick="cliquePilha(1, -1)"></div>
+            <div id="pilha2" class="espaco" onclick="cliquePilha(2, -1)"></div>
+            <div id="pilha3" class="espaco" onclick="cliquePilha(3, -1)"></div>
+            <div id="pilha4" class="espaco" onclick="cliquePilha(4, -1)"></div>
+            <div id="pilha5" class="espaco" onclick="cliquePilha(5, -1)"></div>
+            <div id="pilha6" class="espaco" onclick="cliquePilha(6, -1)"></div>
+        </div>
+    </div>
+
+    <div id="mensagem-vitoria">
+        PARABÉNS, CAPITÃO!<br>O Jogo está Feito!<br>
+        <button class="btn-novo" onclick="iniciarJogo()">Dar Novas Cartas</button>
+    </div>
+
+    <script>
+        const naipes = ['♠', '♥', '♣', '♦'];
+        const corNaipe = {'♠':'preto', '♣':'preto', '♥':'vermelho', '♦':'vermelho'};
+        const nomeValores = {1:'A', 11:'J', 12:'Q', 13:'K'};
+
+        let baralho = [];
+        let lixo = [];
+        let bases = [[], [], [], []];
+        let pilhas = [[], [], [], [], [], [], []];
+        let selecao = null; 
+
+        function iniciarJogo() {
+            document.getElementById('mensagem-vitoria').style.display = 'none';
+            selecao = null;
+            baralho = []; lixo = [];
+            bases = [[], [], [], []];
+            pilhas = [[], [], [], [], [], [], []];
+
+            for (let n of naipes) {
+                for (let v = 1; v <= 13; v++) {
+                    baralho.push({ valor: v, naipe: n, cor: corNaipe[n], virada: false });
+                }
+            }
+
+            for (let i = baralho.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [baralho[i], baralho[j]] = [baralho[j], baralho[i]];
+            }
+
+            for (let i = 0; i < 7; i++) {
+                for (let j = 0; j <= i; j++) {
+                    let carta = baralho.pop();
+                    if (j === i) carta.virada = true;
+                    pilhas[i].push(carta);
+                }
+            }
+            desenharMesa();
+        }
+
+        function desenharMesa() {
+            let divBaralho = document.getElementById('baralho');
+            divBaralho.innerHTML = '';
+            if (baralho.length > 0) {
+                divBaralho.appendChild(criarHTMLCarta(null, true));
+            }
+
+            let divLixo = document.getElementById('lixo');
+            divLixo.innerHTML = '';
+            if (lixo.length > 0) {
+                let cartaLixo = lixo[lixo.length - 1];
+                let elem = criarHTMLCarta(cartaLixo, false);
+                if (selecao && selecao.origem === 'lixo') elem.classList.add('selecionada');
+                divLixo.appendChild(elem);
+            }
+
+            for (let i = 0; i < 4; i++) {
+                let divBase = document.getElementById('base' + i);
+                divBase.innerHTML = '';
+                if (bases[i].length > 0) {
+                    let cartaBase = bases[i][bases[i].length - 1];
+                    let elem = criarHTMLCarta(cartaBase, false);
+                    if (selecao && selecao.origem === 'base' && selecao.indicePilha === i) elem.classList.add('selecionada');
+                    divBase.appendChild(elem);
+                }
+            }
+
+            for (let i = 0; i < 7; i++) {
+                let divPilha = document.getElementById('pilha' + i);
+                divPilha.innerHTML = '';
+                let topoAcumulado = 0;
+
+                pilhas[i].forEach((carta, indexCarta) => {
+                    let elem = criarHTMLCarta(carta, !carta.virada);
+                    elem.style.top = topoAcumulado + 'px';
+                    topoAcumulado += carta.virada ? 30 : 15; 
+                    
+                    if (selecao && selecao.origem === 'pilha' && selecao.indicePilha === i && indexCarta >= selecao.indiceCarta) {
+                        elem.classList.add('selecionada');
+                    }
+
+                    elem.onclick = (e) => { e.stopPropagation(); cliquePilha(i, indexCarta); };
+                    divPilha.appendChild(elem);
+                });
+            }
+            verificarVitoria();
+        }
+
+        function criarHTMLCarta(cartaObj, deCostas) {
+            let div = document.createElement('div');
+            if (deCostas) {
+                div.className = 'carta carta-costas';
+            } else {
+                div.className = `carta ${cartaObj.cor}`;
+                let strValor = nomeValores[cartaObj.valor] || cartaObj.valor;
+                div.innerHTML = `
+                    <div class="carta-topo">${strValor}${cartaObj.naipe}</div>
+                    <div class="naipe-centro">${cartaObj.naipe}</div>
+                    <div class="carta-fundo">${strValor}${cartaObj.naipe}</div>
+                `;
+            }
+            return div;
+        }
+        
+        function cliqueBaralho() {
+            selecao = null;
+            if (baralho.length > 0) {
+                let carta = baralho.pop();
+                carta.virada = true;
+                lixo.push(carta);
+            } else if (lixo.length > 0) {
+                baralho = lixo.reverse();
+                baralho.forEach(c => c.virada = false);
+                lixo = [];
+            }
+            desenharMesa();
+        }
+
+        function cliqueLixo() {
+            if (lixo.length === 0) return;
+            if (selecao && selecao.origem === 'lixo') selecao = null;
+            else selecao = { origem: 'lixo' };
+            desenharMesa();
+        }
+
+        function cliqueBase(indice) {
+            if (selecao) {
+                let cartaMover = obterCartaSelecionada();
+                if (!cartaMover) return;
+                if (selecao.quantidade > 1) return; 
+
+                let cartaTopo = bases[indice].length > 0 ? bases[indice][bases[indice].length - 1] : null;
+                let movimentoValido = podeMoverParaBase(cartaMover, cartaTopo);
+
+                if (movimentoValido) executarMovimento(bases[indice]);
+                selecao = null;
+                desenharMesa();
+            } else {
+                if (bases[indice].length > 0) {
+                    selecao = { origem: 'base', indicePilha: indice, quantidade: 1 };
+                    desenharMesa();
+                }
+            }
+        }
+
+        function cliquePilha(indicePilha, indiceCarta) {
+            if (selecao) {
+                let cartaMover = obterCartaSelecionada(); 
+                if (!cartaMover) return;
+
+                let cartaTopo = pilhas[indicePilha].length > 0 ? pilhas[indicePilha][pilhas[indicePilha].length - 1] : null;
+                let movimentoValido = false;
+                
+                if (!cartaTopo && cartaMover.valor === 13) movimentoValido = true; 
+                else if (cartaTopo && cartaTopo.virada && cartaMover.cor !== cartaTopo.cor && cartaMover.valor === cartaTopo.valor - 1) movimentoValido = true; 
+
+                if (movimentoValido) executarMovimento(pilhas[indicePilha]);
+                selecao = null;
+                desenharMesa();
+            } else {
+                if (indiceCarta >= 0) {
+                    let carta = pilhas[indicePilha][indiceCarta];
+                    if (carta.virada) {
+                        selecao = { origem: 'pilha', indicePilha: indicePilha, indiceCarta: indiceCarta, quantidade: pilhas[indicePilha].length - indiceCarta };
+                        desenharMesa();
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // O NOVO MOTOR: VARRER A MESA AUTOMATICAMENTE
+        // ==========================================
+        function podeMoverParaBase(carta, cartaBaseTopo) {
+            if (!cartaBaseTopo && carta.valor === 1) return true;
+            if (cartaBaseTopo && carta.naipe === cartaBaseTopo.naipe && carta.valor === cartaBaseTopo.valor + 1) return true;
+            return false;
+        }
+
+        function varrerMesa() {
+            selecao = null; // Limpa qualquer seleção pendente
+            let fezMovimento = true;
+
+            // Fica num ciclo contínuo até não conseguir arrumar mais nenhuma carta
+            while (fezMovimento) {
+                fezMovimento = false;
+
+                // Tenta arrumar a carta do lixo
+                if (lixo.length > 0) {
+                    let cartaLixo = lixo[lixo.length - 1];
+                    for (let b = 0; b < 4; b++) {
+                        let cartaTopo = bases[b].length > 0 ? bases[b][bases[b].length - 1] : null;
+                        if (podeMoverParaBase(cartaLixo, cartaTopo)) {
+                            bases[b].push(lixo.pop());
+                            fezMovimento = true;
+                            break; 
+                        }
+                    }
+                }
+
+                // Tenta arrumar as cartas do topo das 7 pilhas
+                for (let i = 0; i < 7; i++) {
+                    if (pilhas[i].length > 0) {
+                        let cartaPilha = pilhas[i][pilhas[i].length - 1];
+                        if (cartaPilha.virada) {
+                            for (let b = 0; b < 4; b++) {
+                                let cartaTopo = bases[b].length > 0 ? bases[b][bases[b].length - 1] : null;
+                                if (podeMoverParaBase(cartaPilha, cartaTopo)) {
+                                    bases[b].push(pilhas[i].pop());
+                                    // Se a carta de baixo estava de costas, vira-a para cima!
+                                    if (pilhas[i].length > 0) {
+                                        pilhas[i][pilhas[i].length - 1].virada = true;
+                                    }
+                                    fezMovimento = true;
+                                    break; 
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            desenharMesa();
+        }
+
+        function obterCartaSelecionada() {
+            if (selecao.origem === 'lixo') return lixo[lixo.length - 1];
+            if (selecao.origem === 'base') return bases[selecao.indicePilha][bases[selecao.indicePilha].length - 1];
+            if (selecao.origem === 'pilha') return pilhas[selecao.indicePilha][selecao.indiceCarta];
+            return null;
+        }
+
+        function executarMovimento(destinoArray) {
+            let cartasMovidas = [];
+            if (selecao.origem === 'lixo') cartasMovidas.push(lixo.pop());
+            else if (selecao.origem === 'base') cartasMovidas.push(bases[selecao.indicePilha].pop());
+            else if (selecao.origem === 'pilha') {
+                cartasMovidas = pilhas[selecao.indicePilha].splice(selecao.indiceCarta, selecao.quantidade);
+                if (pilhas[selecao.indicePilha].length > 0) {
+                    pilhas[selecao.indicePilha][pilhas[selecao.indicePilha].length - 1].virada = true;
+                }
+            }
+            cartasMovidas.forEach(c => destinoArray.push(c));
+        }
+
+        function verificarVitoria() {
+            if (bases[0].length === 13 && bases[1].length === 13 && bases[2].length === 13 && bases[3].length === 13) {
+                document.getElementById('mensagem-vitoria').style.display = 'block';
+            }
+        }
+
+        iniciarJogo();
+    </script>
+</body>
+</html>
