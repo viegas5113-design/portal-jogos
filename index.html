@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Portal de Jogos</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="static/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="static/icons/icon-192.png">
+  <link rel="stylesheet" href="static/css/app.css">
+</head>
+<body>
+  <header class="top-header">
+    <div class="brand">
+      <img src="static/icons/icon-192.png" alt="Portal de Jogos">
+      <div>
+        <h1>Portal de Jogos</h1>
+        <p>Diversão simples e sem anúncios</p>
+      </div>
+    </div>
+    <button id="btnInstall" class="install-btn" type="button">📲 Instalar</button>
+  </header>
+
+  <main class="main-wrap">
+    <section class="intro-banner">
+      <div>
+        <strong style="font-size:16px;">Escolha um jogo para começar</strong>
+        <div style="font-size:13px;color:var(--muted);">Toque no botão grande <strong>▶️ Jogar</strong> em qualquer cartão.</div>
+      </div>
+      <span class="offline-badge">✓ Funciona Offline</span>
+    </section>
+
+    <section id="gamesGrid" class="games-grid"></section>
+  </main>
+
+  <div id="gameStage" class="game-stage">
+    <div class="stage-bar">
+      <button id="btnBackMenu" class="menu-back-btn" type="button">🏠 Menu de Jogos</button>
+      <span id="stageTitle" class="stage-title">A jogar...</span>
+    </div>
+    <iframe id="stageFrame" class="stage-frame" title="Jogo"></iframe>
+  </div>
+
+  <script src="static/js/app.js"></script>
+</body>
+</html>

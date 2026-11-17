@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jogo de Coleta</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px;
+      background: #1e293b;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      background: #334155;
+      padding: 10px 16px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    canvas {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      aspect-ratio: 4 / 5;
+      border: 4px solid #f8fafc;
+      border-radius: 16px;
+      background: #34495e;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      touch-action: none;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .ctrl-btn {
+      min-height: 58px;
+      border: none;
+      border-radius: 16px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #1d4ed8;
+    }
+    .ctrl-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #1d4ed8;
+    }
+    .btn-reset {
+      border: none;
+      border-radius: 10px;
+      background: #f59e0b;
+      color: #1e293b;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Pontos: <strong id="score" style="color:#fbbf24;">0</strong></span>
+    <button id="btnRestart" class="btn-reset">↺ Reiniciar</button>
+  </div>
+
+  <canvas id="gameCanvas" width="400" height="500"></canvas>
+
+  <div class="controls">
+    <button id="btnLeft" class="ctrl-btn">⬅️ Esquerda</button>
+    <button id="btnRight" class="ctrl-btn">Direita ➡️</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+
+    let score = 0;
+    let items = [];
+    let lastSpawn = 0;
+    const itemSpeed = 3.2;
+
+    const player = { x: 180, y: 446, size: 44, color: '#38bdf8' };
+    let rightPressed = false;
+    let leftPressed = false;
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Right' || e.key === 'ArrowRight') rightPressed = true;
+      if (e.key === 'Left' || e.key === 'ArrowLeft') leftPressed = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'Right' || e.key === 'ArrowRight') rightPressed = false;
+      if (e.key === 'Left' || e.key === 'ArrowLeft') leftPressed = false;
+    });
+
+    function bindHold(btn, setFlag) {
+      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); setFlag(true); });
+      btn.addEventListener('pointerup', () => setFlag(false));
+      btn.addEventListener('pointercancel', () => setFlag(false));
+      btn.addEventListener('pointerleave', () => setFlag(false));
+    }
+    bindHold(document.getElementById('btnLeft'), (v) => { leftPressed = v; });
+    bindHold(document.getElementById('btnRight'), (v) => { rightPressed = v; });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.buttons === 0 && e.pointerType === 'mouse') return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const x = (e.clientX - rect.left) * scaleX - player.size / 2;
+      player.x = Math.max(0, Math.min(canvas.width - player.size, x));
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', () => {
+      score = 0;
+      items = [];
+      scoreElement.textContent = '0';
+    });
+
+    function createItem() {
+      items.push({
+        x: 14 + Math.random() * (canvas.width - 28),
+        y: -12,
+        size: 22,
+        color: '#ef4444'
+      });
+    }
+
+    function update(ts) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (rightPressed && player.x < canvas.width - player.size) player.x += 6;
+      if (leftPressed && player.x > 0) player.x -= 6;
+
+      if (ts - lastSpawn > 750) {
+        createItem();
+        lastSpawn = ts;
+      }
+
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += itemSpeed;
+
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (
+          item.y + item.size / 2 > player.y &&
+          item.y - item.size / 2 < player.y + player.size &&
+          item.x + item.size / 2 > player.x &&
+          item.x - item.size / 2 < player.x + player.size
+        ) {
+          items.splice(i, 1);
+          score += 10;
+          scoreElement.textContent = String(score);
+          continue;
+        }
+
+        if (item.y - item.size > canvas.height) {
+          items.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+  </script>
+</body>
+</html>

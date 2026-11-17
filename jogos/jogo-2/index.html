@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jogo da Memória</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 14px;
+      background: #f0fdf4;
+      color: #14532d;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .hud {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 2px solid #bbf7d0;
+      border-radius: 16px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .grid {
+      width: 100%;
+      max-width: 420px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .card {
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      border: 3px solid #86efac;
+      background: #16a34a;
+      color: #fff;
+      font-size: 34px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #15803d;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .card.open, .card.matched {
+      background: #ffffff;
+      border-color: #22c55e;
+      box-shadow: 0 2px 0 #bbf7d0;
+    }
+    .card.matched {
+      background: #dcfce7;
+      opacity: 0.85;
+    }
+    .btn-reset {
+      border: none;
+      border-radius: 12px;
+      background: #16a34a;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .win-msg {
+      font-size: 18px;
+      font-weight: 800;
+      color: #15803d;
+      min-height: 26px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Jogadas: <strong id="moves">0</strong></span>
+    <span>Pares: <strong id="pairs">0</strong>/8</span>
+    <button id="btnReset" class="btn-reset">↺ Novo</button>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="winMsg" class="win-msg"></div>
+
+  <script>
+    const SYMBOLS = ['🌻', '🍓', '🐙', '🦋', '🍋', '🐬', '🧶', '⛵'];
+    const grid = document.getElementById('grid');
+    const movesEl = document.getElementById('moves');
+    const pairsEl = document.getElementById('pairs');
+    const winMsg = document.getElementById('winMsg');
+
+    let flipped = [];
+    let matchedCount = 0;
+    let moves = 0;
+    let lock = false;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function init() {
+      flipped = [];
+      matchedCount = 0;
+      moves = 0;
+      lock = false;
+      movesEl.textContent = '0';
+      pairsEl.textContent = '0';
+      winMsg.textContent = '';
+      grid.innerHTML = '';
+
+      const deck = shuffle([...SYMBOLS, ...SYMBOLS]);
+      deck.forEach((sym) => {
+        const btn = document.createElement('button');
+        btn.className = 'card';
+        btn.textContent = '?';
+        btn.dataset.sym = sym;
+        btn.addEventListener('click', () => flipCard(btn));
+        grid.appendChild(btn);
+      });
+    }
+
+    function flipCard(btn) {
+      if (lock || btn.classList.contains('open') || btn.classList.contains('matched')) return;
+      btn.classList.add('open');
+      btn.textContent = btn.dataset.sym;
+      flipped.push(btn);
+
+      if (flipped.length === 2) {
+        moves++;
+        movesEl.textContent = String(moves);
+        const [a, b] = flipped;
+        if (a.dataset.sym === b.dataset.sym) {
+          a.classList.add('matched');
+          b.classList.add('matched');
+          flipped = [];
+          matchedCount++;
+          pairsEl.textContent = String(matchedCount);
+          if (matchedCount === SYMBOLS.length) {
+            winMsg.textContent = `🎉 Parabéns! Concluiu em ${moves} jogadas!`;
+          }
+        } else {
+          lock = true;
+          setTimeout(() => {
+            a.classList.remove('open');
+            b.classList.remove('open');
+            a.textContent = '?';
+            b.textContent = '?';
+            flipped = [];
+            lock = false;
+          }, 700);
+        }
+      }
+    }
+
+    document.getElementById('btnReset').addEventListener('click', init);
+    init();
+  </script>
+</body>
+</html>
