@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-jogos-v5';
+const CACHE_NAME = 'portal-jogos-v6';
 
 const APP_SHELL = [
   './',
