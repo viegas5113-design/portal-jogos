@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-jogos-v1';
+const CACHE_NAME = 'portal-jogos-v2';
 
 const APP_SHELL = [
   './',
@@ -11,7 +11,9 @@ const APP_SHELL = [
   './jogos/jogo-1/index.html',
   './jogos/jogo-2/index.html',
   './jogos/jogo-3/index.html',
-  './jogos/jogo-4/index.html'
+  './jogos/jogo-4/index.html',
+  './jogos/jogo-5/index.html',
+  './jogos/jogo-6/index.html'
 ];
 
 self.addEventListener('install', (event) => {

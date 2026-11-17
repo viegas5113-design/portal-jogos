@@ -37,6 +37,24 @@
       icon: '🇵🇹',
       bg: '#dbeafe',
       url: './jogos/jogo-4/index.html'
+    },
+    {
+      id: 'jogo-5',
+      title: 'Jogo de Pong',
+      desc: 'Clássico ténis de mesa retro com 1 jogador (vs IA) ou 2 jogadores no mesmo ecrã.',
+      tag: 'Importado do PC · Arcade',
+      icon: '🏓',
+      bg: '#e0e7ff',
+      url: './jogos/jogo-5/index.html'
+    },
+    {
+      id: 'jogo-6',
+      title: 'Mapa dos Distritos de Portugal',
+      desc: 'Encontre no mapa os 18 distritos de Portugal Continental, Madeira e Açores.',
+      tag: 'Mapa · Puzzle Educativo',
+      icon: '🗺️',
+      bg: '#e0f2fe',
+      url: './jogos/jogo-6/index.html'
     }
   ];
 

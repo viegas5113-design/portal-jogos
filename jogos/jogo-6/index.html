@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mapa & Puzzle dos Distritos de Portugal</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+      background: #f0f9ff;
+      color: #0c4a6e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .hud {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border: 2px solid #bae6fd;
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 14.5px;
+    }
+    .prompt-box {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0369a1;
+      text-align: center;
+      background: #e0f2fe;
+      padding: 8px 12px;
+      border-radius: 12px;
+    }
+    .map-wrap {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border: 2px solid #bae6fd;
+      border-radius: 18px;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+    }
+    svg {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+    }
+    .dist {
+      fill: #cbd5e1;
+      stroke: #fff;
+      stroke-width: 2;
+      cursor: pointer;
+      transition: fill 0.15s ease;
+    }
+    .dist:hover { fill: #94a3b8; }
+    .dist.found { fill: #10b981; }
+    .dist.wrong { fill: #ef4444; }
+    .btn {
+      min-height: 44px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 12px;
+      background: #0284c7;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .feedback {
+      font-weight: 800;
+      font-size: 15px;
+      min-height: 22px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <div class="hud-top">
+      <span>Encontrados: <strong id="foundCount">0</strong>/20</span>
+      <span>Erros: <strong id="errCount">0</strong></span>
+      <button id="btnRestart" class="btn">↺ Novo Jogo</button>
+    </div>
+    <div id="promptBox" class="prompt-box">Toque no distrito: Lisboa</div>
+    <div id="feedback" class="feedback"></div>
+  </div>
+
+  <div class="map-wrap">
+    <svg viewBox="0 0 340 500" aria-label="Mapa dos Distritos e Regiões de Portugal">
+      <!-- Regiões Autónomas -->
+      <rect id="acores" class="dist" x="14" y="40" width="76" height="44" rx="10" data-name="Açores"/>
+      <text x="52" y="66" text-anchor="middle" font-size="11" font-weight="800" fill="#0f172a" pointer-events="none">Açores</text>
+
+      <rect id="madeira" class="dist" x="14" y="102" width="76" height="44" rx="10" data-name="Madeira"/>
+      <text x="52" y="128" text-anchor="middle" font-size="11" font-weight="800" fill="#0f172a" pointer-events="none">Madeira</text>
+
+      <!-- Norte -->
+      <path id="viana" class="dist" d="M135,20 L185,18 L182,58 L132,58 Z" data-name="Viana do Castelo"/>
+      <path id="braga" class="dist" d="M132,58 L182,58 L195,90 L134,88 Z" data-name="Braga"/>
+      <path id="vilareal" class="dist" d="M185,18 L248,24 L245,92 L195,90 L182,58 Z" data-name="Vila Real"/>
+      <path id="braganca" class="dist" d="M248,24 L315,36 L308,108 L245,92 Z" data-name="Bragança"/>
+      <path id="porto" class="dist" d="M134,88 L195,90 L194,126 L132,124 Z" data-name="Porto"/>
+
+      <!-- Centro -->
+      <path id="aveiro" class="dist" d="M132,124 L175,125 L172,175 L122,174 Z" data-name="Aveiro"/>
+      <path id="viseu" class="dist" d="M175,125 L235,92 L238,168 L172,175 Z" data-name="Viseu"/>
+      <path id="guarda" class="dist" d="M235,92 L308,108 L286,185 L238,168 Z" data-name="Guarda"/>
+      <path id="coimbra" class="dist" d="M122,174 L196,172 L198,216 L114,216 Z" data-name="Coimbra"/>
+      <path id="castelobranco" class="dist" d="M196,172 L286,185 L278,252 L198,242 Z" data-name="Castelo Branco"/>
+      <path id="leiria" class="dist" d="M114,216 L166,216 L158,274 L98,268 Z" data-name="Leiria"/>
+      <path id="santarem" class="dist" d="M166,216 L218,242 L206,304 L148,298 Z" data-name="Santarém"/>
+      <path id="lisboa" class="dist" d="M98,268 L158,274 L148,320 L88,316 Z" data-name="Lisboa"/>
+
+      <!-- Alentejo & Algarve -->
+      <path id="portalegre" class="dist" d="M218,242 L278,252 L274,316 L206,304 Z" data-name="Portalegre"/>
+      <path id="setubal" class="dist" d="M108,320 L166,316 L168,386 L116,386 Z" data-name="Setúbal"/>
+      <path id="evora" class="dist" d="M166,304 L268,316 L256,378 L168,372 Z" data-name="Évora"/>
+      <path id="beja" class="dist" d="M116,386 L256,378 L244,444 L118,442 Z" data-name="Beja"/>
+      <path id="faro" class="dist" d="M118,442 L244,444 L236,482 L114,478 Z" data-name="Faro"/>
+    </svg>
+  </div>
+
+  <script>
+    const nodes = Array.from(document.querySelectorAll('.dist'));
+    const promptBox = document.getElementById('promptBox');
+    const feedback = document.getElementById('feedback');
+    const foundCountEl = document.getElementById('foundCount');
+    const errCountEl = document.getElementById('errCount');
+
+    let queue = [];
+    let current = null;
+    let found = 0;
+    let errors = 0;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function nextTarget() {
+      if (!queue.length) {
+        promptBox.textContent = `🎉 Parabéns! Completou os 20 distritos e regiões (${errors} erros)!`;
+        current = null;
+        return;
+      }
+      current = queue[0];
+      promptBox.textContent = `Toque no mapa: ${current.dataset.name}`;
+    }
+
+    function init() {
+      found = 0;
+      errors = 0;
+      foundCountEl.textContent = '0';
+      errCountEl.textContent = '0';
+      feedback.textContent = '';
+      nodes.forEach((n) => n.classList.remove('found', 'wrong'));
+      queue = shuffle([...nodes]);
+      nextTarget();
+    }
+
+    nodes.forEach((node) => {
+      node.addEventListener('click', () => {
+        if (!current || node.classList.contains('found')) return;
+        if (node === current) {
+          node.classList.add('found');
+          found++;
+          foundCountEl.textContent = String(found);
+          feedback.style.color = '#059669';
+          feedback.textContent = `✓ Certo: ${node.dataset.name}!`;
+          queue.shift();
+          nextTarget();
+        } else {
+          errors++;
+          errCountEl.textContent = String(errors);
+          feedback.style.color = '#dc2626';
+          feedback.textContent = `✕ Esse é ${node.dataset.name}. Tente outra vez!`;
+          node.classList.add('wrong');
+          setTimeout(() => node.classList.remove('wrong'), 450);
+        }
+      });
+    });
+
+    document.getElementById('btnRestart').addEventListener('click', init);
+    init();
+  </script>
+</body>
+</html>
