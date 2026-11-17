@@ -290,7 +290,7 @@
   ];
 
   const catBar = document.getElementById('catBar');
-  const gamesContainer = document.getElementById('gamesContainer');
+  const gamesContainer = document.getElementById('gamesContainer') || document.getElementById('gamesGrid');
   const stage = document.getElementById('gameStage');
   const stageFrame = document.getElementById('stageFrame');
   const stageTitle = document.getElementById('stageTitle');
@@ -340,10 +340,10 @@
       }
       if ('serviceWorker' in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.update()));
+        await Promise.all(regs.map((r) => r.unregister()));
       }
     } catch (_) {}
-    window.location.reload();
+    window.location.replace(window.location.pathname + '?v=' + Date.now());
   });
 
   function createGameCard(game) {

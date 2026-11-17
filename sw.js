@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-jogos-v6';
+const CACHE_NAME = 'portal-jogos-v7';
 
 const APP_SHELL = [
   './',
@@ -64,18 +64,16 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
+  // Network-first para o portal principal (evita mistura entre versões de index.html e app.js)
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req)
-        .then((resp) => {
-          if (resp && resp.ok && req.url.startsWith(self.location.origin)) {
-            const copy = resp.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-          }
-          return resp;
-        })
-        .catch(() => caches.match('./index.html'));
-    })
+    fetch(req)
+      .then((resp) => {
+        if (resp && resp.ok && req.url.startsWith(self.location.origin)) {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
+        return resp;
+      })
+      .catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });
