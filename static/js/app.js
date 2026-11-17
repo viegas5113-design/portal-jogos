@@ -64,6 +64,7 @@
   const stageTitle = document.getElementById('stageTitle');
   const btnBackMenu = document.getElementById('btnBackMenu');
   const btnInstall = document.getElementById('btnInstall');
+  const btnRefreshGames = document.getElementById('btnRefreshGames');
 
   let deferredPrompt = null;
 
@@ -95,6 +96,22 @@
   }
 
   btnBackMenu.addEventListener('click', closeGame);
+
+  btnRefreshGames.addEventListener('click', async () => {
+    btnRefreshGames.disabled = true;
+    btnRefreshGames.textContent = '🔄 A atualizar...';
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.update()));
+      }
+    } catch (_) {}
+    window.location.reload();
+  });
 
   GAMES.forEach((game) => {
     const card = document.createElement('article');
